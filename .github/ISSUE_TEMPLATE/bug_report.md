@@ -24,11 +24,11 @@ assignees: aks-builds
 - `freeze` version (`freeze --version`):
 - `vhs` version (if relevant):
 - Python version (`python --version`):
-- proofshot version / commit:
+- cliproof version / commit:
 
 ## Output of preflight
 
-<!-- Paste: python skills/proofshot/scripts/preflight.py -->
+<!-- Paste: python skills/cliproof/scripts/preflight.py -->
 
 ```
 ```

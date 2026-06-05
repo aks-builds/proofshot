@@ -1,13 +1,13 @@
 # Security model
 
-proofshot runs real shell commands and writes images into a repo, so it treats
+cliproof runs real shell commands and writes images into a repo, so it treats
 security as a first-class concern — not advice the model "should" follow, but
 gates enforced by small, auditable scripts.
 
 ## Trust boundaries
-- proofshot **never makes network calls.** Every bundled script is pure Python
+- cliproof **never makes network calls.** Every bundled script is pure Python
   standard library — no third-party packages, no `pip install`, no telemetry.
-- proofshot only **reads and writes files inside the user's repo** (the captured
+- cliproof only **reads and writes files inside the user's repo** (the captured
   image and `README.md`) and runs the command the user chose to demonstrate.
 - The only external programs it invokes are the user's own toolchain
   (`freeze`/`vhs`, and — for `rasterize.py` — a locally installed SVG renderer
@@ -53,16 +53,16 @@ through, so the human still reviews the captured output before it is committed.
 ### 3. Idempotent README writes — `scripts/embed.py`
 Edits are confined to a marked block:
 ```
-<!-- proofshot:start id=<id> -->
+<!-- cliproof:start id=<id> -->
 …image markdown…
-<!-- proofshot:end id=<id> -->
+<!-- cliproof:end id=<id> -->
 ```
 Re-running with the same `id` replaces that block instead of appending a
 duplicate. The rest of the README is never touched. The script makes a `.bak`
 on first write and prints a unified diff so the change is reviewable.
 
 ## Supply-chain notes
-- proofshot does not bundle or download `freeze`/`vhs`. It points the user to
+- cliproof does not bundle or download `freeze`/`vhs`. It points the user to
   official sources and **pins versions** (`references/tooling.md`) so output is
   reproducible and an unexpected upstream change can't silently alter results.
 - Installs are always surfaced to the user for confirmation; nothing is fetched
@@ -70,7 +70,7 @@ on first write and prints a unified diff so the change is reviewable.
 - The bundled scripts have **zero dependencies** — audit them in full in
   `scripts/`. There is no build step, no postinstall hook, no obfuscation.
 
-## What proofshot deliberately does NOT do
+## What cliproof deliberately does NOT do
 - Send captured output anywhere off the machine.
 - Auto-commit or auto-push.
 - Install global packages without consent.

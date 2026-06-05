@@ -1,6 +1,6 @@
 # Tooling reference: `freeze` and `vhs`
 
-Both are [Charm](https://charm.sh) CLIs that run a real command in a pseudo-terminal and capture genuine ANSI output. proofshot pins to known-good versions for deterministic results.
+Both are [Charm](https://charm.sh) CLIs that run a real command in a pseudo-terminal and capture genuine ANSI output. cliproof pins to known-good versions for deterministic results.
 
 Pinned versions (bump deliberately, test, then update here):
 - `freeze` — `v0.2.2`
@@ -10,7 +10,7 @@ Pinned versions (bump deliberately, test, then update here):
 
 ## `freeze` — static terminal screenshots (default)
 
-Single self-contained Go binary that runs on Windows, macOS, and Linux. It emits **SVG** natively and can *also* rasterize to PNG/WebP — but its PNG/WebP path uses a bundled wasm rasterizer that **can crash on some Windows machines**, and `freeze` **hangs** when launched with an inherited (non-tty) stdin, which is exactly what an agent/CI shell provides. proofshot therefore drives `freeze` through `scripts/capture.py`, which closes stdin and captures to SVG; PNG is produced afterwards by `scripts/rasterize.py`. See **Reliability** below.
+Single self-contained Go binary that runs on Windows, macOS, and Linux. It emits **SVG** natively and can *also* rasterize to PNG/WebP — but its PNG/WebP path uses a bundled wasm rasterizer that **can crash on some Windows machines**, and `freeze` **hangs** when launched with an inherited (non-tty) stdin, which is exactly what an agent/CI shell provides. cliproof therefore drives `freeze` through `scripts/capture.py`, which closes stdin and captures to SVG; PNG is produced afterwards by `scripts/rasterize.py`. See **Reliability** below.
 
 ### Install
 | Method | Command |
@@ -22,7 +22,7 @@ Single self-contained Go binary that runs on Windows, macOS, and Linux. It emits
 | Release binary | https://github.com/charmbracelet/freeze/releases |
 
 ### Two modes
-- **Capture a command's output** (what proofshot uses): `freeze --execute "ls -la" -o out.svg`
+- **Capture a command's output** (what cliproof uses): `freeze --execute "ls -la" -o out.svg`
 - **Capture a file** (syntax-highlighted code): `freeze main.go -o code.svg`
 
 > Run captures through `capture.py` rather than calling `freeze` directly — it
@@ -68,7 +68,7 @@ python scripts/capture.py --execute "<cmd>" --theme github \
   -o .github/media/<name>.svg
 ```
 
-### SVG-first capture (the proofshot pipeline)
+### SVG-first capture (the cliproof pipeline)
 SVG is text, so it can be scanned by `redact.py`, it renders on GitHub as-is, and
 it sidesteps the PNG rasterizer entirely. Capture → redact → (optionally) rasterize:
 ```bash

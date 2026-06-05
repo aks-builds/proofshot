@@ -1,10 +1,18 @@
 # Changelog
 
-All notable changes to proofshot are documented here. The format is based on
+All notable changes to cliproof are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+### Changed
+- **Renamed the project `proofshot` → `cliproof`.** The previous name collided
+  with an established npm package and GitHub repo (`AmElmo/proofshot`) that also
+  installs to `~/.claude/skills/proofshot/`, which would clobber this skill on
+  disk. `cliproof` is verified free on npm and GitHub. Install is now
+  `/plugin marketplace add aks-builds/cliproof` then `/plugin install cliproof@cliproof`;
+  the embed marker is `<!-- cliproof:start -->`.
 
 ### Added
 - **`scripts/capture.py`** — reliable wrapper around `freeze`: launches it with
@@ -46,14 +54,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Initial public release.
 
 ### Added
-- **Agent Skill** (`skills/proofshot/SKILL.md` + `references/`) that captures a
+- **Agent Skill** (`skills/cliproof/SKILL.md` + `references/`) that captures a
   real CLI command and its real output as a styled screenshot (Charm `freeze`)
   or animated GIF (`vhs`) and embeds it into `README.md` as proof-it-runs
   evidence. macOS/iOS and Windows-terminal style presets.
 - **Plugin packaging** — `.claude-plugin/plugin.json` and a self-hosted
   `.claude-plugin/marketplace.json`, installable via
-  `/plugin marketplace add aks-builds/proofshot` then
-  `/plugin install proofshot@proofshot`.
+  `/plugin marketplace add aks-builds/cliproof` then
+  `/plugin install cliproof@cliproof`.
 - **Enforced security gates** (pure stdlib, no network):
   - `scripts/guard.py` — refuses to capture destructive/exfiltration commands.
   - `scripts/redact.py` — masks secrets (keys, tokens, JWTs, private keys) and

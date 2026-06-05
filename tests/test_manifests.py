@@ -19,7 +19,7 @@ def _load(*parts):
 def test_plugin_manifest():
     m = _load(".claude-plugin", "plugin.json")
     assert KEBAB.match(m["name"]), m["name"]
-    assert m["name"] == "proofshot"
+    assert m["name"] == "cliproof"
     assert m.get("license") == "MIT"
     assert isinstance(m.get("keywords", []), list)
 
@@ -49,7 +49,7 @@ def _frontmatter(path):
 
 
 def test_skill_frontmatter():
-    fm = _frontmatter(os.path.join(ROOT, "skills", "proofshot", "SKILL.md"))
+    fm = _frontmatter(os.path.join(ROOT, "skills", "cliproof", "SKILL.md"))
     name, desc = fm.get("name", ""), fm.get("description", "")
     assert KEBAB.match(name) and len(name) <= 64
     assert not any(r in name.lower() for r in RESERVED), "name must not contain reserved words"
@@ -58,5 +58,5 @@ def test_skill_frontmatter():
 
 
 def test_skill_dir_matches_manifest_keyword():
-    assert os.path.isdir(os.path.join(ROOT, "skills", "proofshot"))
-    assert os.path.isfile(os.path.join(ROOT, "skills", "proofshot", "SKILL.md"))
+    assert os.path.isdir(os.path.join(ROOT, "skills", "cliproof"))
+    assert os.path.isfile(os.path.join(ROOT, "skills", "cliproof", "SKILL.md"))

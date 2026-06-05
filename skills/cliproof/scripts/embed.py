@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""embed.py — idempotently insert/update a proofshot image block in a README.
+"""embed.py — idempotently insert/update a cliproof image block in a README.
 
 The image markdown lives between marker comments keyed by an id:
 
-    <!-- proofshot:start id=<id> -->
+    <!-- cliproof:start id=<id> -->
     ![alt](path)
-    <!-- proofshot:end id=<id> -->
+    <!-- cliproof:end id=<id> -->
 
 Re-running with the same --id replaces that block in place (no duplicates).
 A new --id adds a new block. The rest of the file is never touched.
@@ -41,16 +41,16 @@ for _stream in (sys.stdout, sys.stderr):
 def _block(image: str, alt: str, block_id: str) -> str:
     image_md = "![{alt}]({img})".format(alt=alt, img=image.replace("\\", "/"))
     return (
-        "<!-- proofshot:start id={id} -->\n"
+        "<!-- cliproof:start id={id} -->\n"
         "{md}\n"
-        "<!-- proofshot:end id={id} -->"
+        "<!-- cliproof:end id={id} -->"
     ).format(id=block_id, md=image_md)
 
 
 def upsert(text: str, image: str, alt: str, block_id: str, heading: str) -> str:
     block = _block(image, alt, block_id)
-    start = re.escape("<!-- proofshot:start id={} -->".format(block_id))
-    end = re.escape("<!-- proofshot:end id={} -->".format(block_id))
+    start = re.escape("<!-- cliproof:start id={} -->".format(block_id))
+    end = re.escape("<!-- cliproof:end id={} -->".format(block_id))
     pattern = re.compile(start + r"[\s\S]*?" + end)
 
     if pattern.search(text):
@@ -71,7 +71,7 @@ def upsert(text: str, image: str, alt: str, block_id: str, heading: str) -> str:
 
 
 def main(argv=None) -> int:
-    p = argparse.ArgumentParser(description="Idempotently embed a proofshot image in a README.")
+    p = argparse.ArgumentParser(description="Idempotently embed a cliproof image in a README.")
     p.add_argument("readme", help="path to README.md")
     p.add_argument("--image", required=True, help="repo-relative image path")
     p.add_argument("--alt", required=True, help="alt text describing the shot")
@@ -94,7 +94,7 @@ def main(argv=None) -> int:
     diff = "".join(difflib.unified_diff(
         original.splitlines(keepends=True),
         updated.splitlines(keepends=True),
-        fromfile=args.readme, tofile=args.readme + " (proofshot)",
+        fromfile=args.readme, tofile=args.readme + " (cliproof)",
     ))
     if diff:
         sys.stdout.write(diff)

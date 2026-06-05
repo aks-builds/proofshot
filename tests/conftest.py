@@ -4,7 +4,7 @@ import sys
 
 SCRIPTS = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    "skills", "proofshot", "scripts",
+    "skills", "cliproof", "scripts",
 )
 if SCRIPTS not in sys.path:
     sys.path.insert(0, SCRIPTS)

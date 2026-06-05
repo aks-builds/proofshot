@@ -1,4 +1,4 @@
-<!-- Thanks for contributing to proofshot! -->
+<!-- Thanks for contributing to cliproof! -->
 
 ## What does this PR do?
 
@@ -15,5 +15,5 @@
 - [ ] Bundled scripts remain **pure standard library** (no new third-party deps, no network calls)
 - [ ] Updated docs (`README` / `SKILL.md` / `references/`) if behavior changed
 - [ ] **No real secrets or personal data** in fixtures, screenshots, or test data
-- [ ] Preserves proofshot's posture: real output only, secrets redacted, local-only, confirm before installs/writes
+- [ ] Preserves cliproof's posture: real output only, secrets redacted, local-only, confirm before installs/writes
 - [ ] Commits follow [Conventional Commits](https://www.conventionalcommits.org)

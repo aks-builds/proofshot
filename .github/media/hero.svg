@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
-<svg width="1138.00" height="400.00" xmlns="http://www.w3.org/2000/svg">
+<svg width="1138.00" height="417.00" xmlns="http://www.w3.org/2000/svg">
 <style>
 @font-face {
 	font-family: &apos;JetBrains Mono&apos;;
@@ -8,10 +8,10 @@
 	font-weight: normal;
 	font-style: normal;
 }
-</style><rect width="1096.00" height="358.00" fill="#282a36" rx="8.00" ry="8.00" filter="url(#shadow)" stroke="#30363d" stroke-width="1.00" x="20.00px" y="20.00px"/>
+</style><rect width="1096.00" height="375.00" fill="#282a36" rx="8.00" ry="8.00" filter="url(#shadow)" stroke="#30363d" stroke-width="1.00" x="20.00px" y="20.00px"/>
 <g font-family="JetBrains Mono" font-size="14.00px" fill="#f8f8f2" clip-path="url(#terminalMask)">
-<text x="44.00px" y="75.80px" xml:space="preserve">$ proofshot preflight
-</text><text x="44.00px" y="92.60px" xml:space="preserve">proofshot preflight
+<text x="44.00px" y="75.80px" xml:space="preserve">$ cliproof preflight
+</text><text x="44.00px" y="92.60px" xml:space="preserve">cliproof preflight
 </text><text x="44.00px" y="109.40px" xml:space="preserve">  OS: Windows
 </text><text x="44.00px" y="126.20px" xml:space="preserve">  tools:
 </text><text x="44.00px" y="143.00px" xml:space="preserve">    [ok ] freeze
@@ -22,11 +22,12 @@
 </text><text x="44.00px" y="227.00px" xml:space="preserve">    [ok ] python3
 </text><text x="44.00px" y="243.80px" xml:space="preserve">
 </text><text x="44.00px" y="260.60px" xml:space="preserve">  static screenshot (freeze): AVAILABLE
-</text><text x="44.00px" y="277.40px" xml:space="preserve">  animated gif (vhs):         unavailable - ttyd has no native Windows build - run vhs under WSL, or use a static screenshot.
-</text><text x="44.00px" y="294.20px" xml:space="preserve">
-</text><text x="44.00px" y="311.00px" xml:space="preserve">  install hints:
-</text><text x="44.00px" y="327.80px" xml:space="preserve">    vhs: brew install vhs  (needs ffmpeg + ttyd; on Windows use WSL)
-</text><text x="44.00px" y="344.60px" xml:space="preserve">    ttyd: https://github.com/tsl0922/ttyd  (no native Windows build - use WSL)
+</text><text x="44.00px" y="277.40px" xml:space="preserve">  svg -&gt; png (rasterize.py):  AVAILABLE via browser
+</text><text x="44.00px" y="294.20px" xml:space="preserve">  animated gif (vhs):         unavailable - ttyd has no native Windows build - run vhs under WSL, or use a static screenshot.
+</text><text x="44.00px" y="311.00px" xml:space="preserve">
+</text><text x="44.00px" y="327.80px" xml:space="preserve">  install hints:
+</text><text x="44.00px" y="344.60px" xml:space="preserve">    vhs: brew install vhs  (needs ffmpeg + ttyd; on Windows use WSL)
+</text><text x="44.00px" y="361.40px" xml:space="preserve">    ttyd: https://github.com/tsl0922/ttyd  (no native Windows build - use WSL)
 </text>
 </g>
 <svg x="20.00px" y="20.00px"><circle cx="13.50" cy="12.00" r="5.50" fill="#FF5A54"/><circle cx="32.50" cy="12.00" r="5.50" fill="#E6BF29"/><circle cx="51.50" cy="12.00" r="5.50" fill="#52C12B"/></svg><defs><filter id="shadow" filterUnits="userSpaceOnUse"><feGaussianBlur in="SourceAlpha" stdDeviation="24.00"/><feOffset result="offsetblur" dx="0.00" dy="12.00"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs></svg>

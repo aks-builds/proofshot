@@ -1,6 +1,6 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "proofshot",
+  "name": "cliproof",
   "owner": {
     "name": "aks-builds",
     "url": "https://github.com/aks-builds"
@@ -11,7 +11,7 @@
   },
   "plugins": [
     {
-      "name": "proofshot",
+      "name": "cliproof",
       "source": "./",
       "description": "Capture a real terminal command and its real output as a polished screenshot or GIF, then embed it into README.md as proof the software works. Static screenshots via Charm `freeze`; animated demos via `vhs`. Enforced secret redaction, command-safety guard, and idempotent README inserts.",
       "version": "0.1.0",

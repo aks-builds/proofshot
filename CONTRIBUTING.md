@@ -1,6 +1,6 @@
-# Contributing to proofshot
+# Contributing to cliproof
 
-Thanks for your interest! proofshot helps developers prove their CLI actually
+Thanks for your interest! cliproof helps developers prove their CLI actually
 works by capturing **real** command output as polished screenshots and GIFs and
 embedding them into a README. Contributions of all kinds are welcome — code,
 docs, new style presets, redaction patterns, and tests.
@@ -19,8 +19,8 @@ docs, new style presets, redaction patterns, and tests.
 ## Dev setup
 
 ```bash
-git clone https://github.com/aks-builds/proofshot.git
-cd proofshot
+git clone https://github.com/aks-builds/cliproof.git
+cd cliproof
 python -m venv .venv && . .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements-dev.txt
 pytest -q

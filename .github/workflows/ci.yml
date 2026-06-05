@@ -37,6 +37,6 @@ jobs:
 
       - name: Smoke-test bundled scripts
         run: |
-          python skills/proofshot/scripts/preflight.py --json
-          python skills/proofshot/scripts/guard.py -- "echo hello"
-          echo "AKIAIOSFODNN7EXAMPLE" | python skills/proofshot/scripts/redact.py - || test $? -eq 3
+          python skills/cliproof/scripts/preflight.py --json
+          python skills/cliproof/scripts/guard.py -- "echo hello"
+          echo "AKIAIOSFODNN7EXAMPLE" | python skills/cliproof/scripts/redact.py - || test $? -eq 3

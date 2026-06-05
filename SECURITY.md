@@ -1,8 +1,8 @@
 # Security Policy
 
-proofshot runs real shell commands and writes files into a repository, so it
+cliproof runs real shell commands and writes files into a repository, so it
 treats security as a first-class concern. The full threat model lives in
-[`skills/proofshot/references/security.md`](./skills/proofshot/references/security.md);
+[`skills/cliproof/references/security.md`](./skills/cliproof/references/security.md);
 this file is the reporting policy.
 
 ## Reporting a vulnerability
@@ -10,7 +10,7 @@ this file is the reporting policy.
 **Please do not open a public issue for security vulnerabilities.**
 
 Report privately via GitHub's
-[security advisory](https://github.com/aks-builds/proofshot/security/advisories/new)
+[security advisory](https://github.com/aks-builds/cliproof/security/advisories/new)
 ("Report a vulnerability"). Include:
 
 - a description of the issue and its impact,
@@ -33,7 +33,7 @@ promptly. Please allow reasonable time to fix before public disclosure.
 
 - Bundled scripts are **pure Python standard library** — no third-party
   packages, no network calls, no build/postinstall steps, no obfuscation.
-- proofshot **never transmits captured output** off the machine.
+- cliproof **never transmits captured output** off the machine.
 - It never auto-installs global packages, auto-commits, or auto-pushes.
 - Underlying tools (`freeze`/`vhs`) are **version-pinned** and installed only
   from official sources, with user confirmation.

@@ -2,7 +2,7 @@
 """guard.py — refuse to capture obviously dangerous commands.
 
 A safety net, NOT a sandbox. It matches a command string against a denylist of
-destructive / exfiltration patterns. A match exits non-zero so the proofshot
+destructive / exfiltration patterns. A match exits non-zero so the cliproof
 workflow stops and asks the human before running anything.
 
 Usage:

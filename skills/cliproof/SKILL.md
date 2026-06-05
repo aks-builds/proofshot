@@ -1,11 +1,11 @@
 ---
-name: proofshot
+name: cliproof
 description: Capture a real terminal command and its real output as a polished screenshot or animated GIF, then embed it into README.md as "proof it runs" evidence for GitHub visitors. Use when the user wants a terminal screenshot, CLI demo, README demo GIF, a styled (macOS/iOS or Windows) terminal image of a program/service/build, to "show the command output", or any visual proof that a product actually ships and works. Captures genuine output (never fabricated), redacts secrets, and inserts idempotently.
 ---
 
-# Proofshot — prove your CLI actually runs
+# Cliproof — prove your CLI actually runs
 
-Turn a **real** command and its **real** output into a styled terminal image (or animated GIF) and embed it into `README.md`, so GitHub visitors get instant confidence the project works. The whole value is honesty: proofshot captures genuine execution, never a mock-up.
+Turn a **real** command and its **real** output into a styled terminal image (or animated GIF) and embed it into `README.md`, so GitHub visitors get instant confidence the project works. The whole value is honesty: cliproof captures genuine execution, never a mock-up.
 
 ## When to use
 - Capture a screenshot of a command + its output in a styled terminal (macOS/iOS traffic-light bar, Windows-style chrome, or a theme).
@@ -17,10 +17,10 @@ Turn a **real** command and its **real** output into a styled terminal image (or
 2. **Redact secrets before anything is written to disk or the README.** This is enforced by `scripts/redact.py`, not left to judgement.
 3. **Guard the command before executing it.** Run it past `scripts/guard.py`; never capture a destructive or clearly unsafe command.
 4. **Confirm before installing tools, before writing README.md, and before committing.**
-5. **Stay local.** Proofshot never transmits captured output anywhere. It only reads/writes files in the user's repo.
+5. **Stay local.** Cliproof never transmits captured output anywhere. It only reads/writes files in the user's repo.
 
 ## The two capture tools
-proofshot uses [Charm](https://charm.sh) CLIs that run a real command in a pseudo-terminal and capture genuine ANSI output.
+cliproof uses [Charm](https://charm.sh) CLIs that run a real command in a pseudo-terminal and capture genuine ANSI output.
 
 | Need | Tool | Output | Platforms |
 |---|---|---|---|
@@ -33,9 +33,9 @@ Default to **static** (`freeze`). Use `vhs` only when the user explicitly wants 
 
 ### 1. Preflight — know what's possible on this machine
 ```bash
-python skills/proofshot/scripts/preflight.py
+python skills/cliproof/scripts/preflight.py
 ```
-It reports the OS, which tools are installed (`freeze`/`vhs`/`ffmpeg`/`ttyd`/`go`), and what capture modes are available. Use its output to decide static vs. animated and whether an install is needed. (Paths below are relative to the skill directory; when installed as a plugin, prefix with `${CLAUDE_PLUGIN_ROOT}/skills/proofshot/` if a bare path is not found.)
+It reports the OS, which tools are installed (`freeze`/`vhs`/`ffmpeg`/`ttyd`/`go`), and what capture modes are available. Use its output to decide static vs. animated and whether an install is needed. (Paths below are relative to the skill directory; when installed as a plugin, prefix with `${CLAUDE_PLUGIN_ROOT}/skills/cliproof/` if a bare path is not found.)
 
 ### 2. Choose the command to capture
 Ask the user (or infer from the repo) which command best demonstrates the product working. Prefer commands that:
@@ -47,7 +47,7 @@ For long-running/interactive programs, suggest a short non-interactive variant, 
 
 ### 3. Guard the command (security gate)
 ```bash
-python skills/proofshot/scripts/guard.py -- "<the exact command>"
+python skills/cliproof/scripts/guard.py -- "<the exact command>"
 ```
 - Exit `0` → safe to proceed.
 - Exit `2` → flagged as risky (matches a destructive/exfiltration pattern). **Stop and show the user the warning; do not run it** unless they explicitly override and you understand why it's safe.
@@ -65,7 +65,7 @@ Create `.github/media/` if absent. Use a descriptive kebab-case name (`cli-help`
 
 **macOS/iOS window look (default):**
 ```bash
-python skills/proofshot/scripts/capture.py --execute "<command>" \
+python skills/cliproof/scripts/capture.py --execute "<command>" \
   --window --theme "dracula" --background "#0d1117" \
   --padding 24 --margin 20 \
   --border.radius 8 --border.width 1 --border.color "#30363d" \
@@ -79,7 +79,7 @@ On Windows, wrap shell built-ins: `--execute "powershell -NoProfile -Command \"<
 
 **Animated GIF (vhs):**
 ```bash
-cp skills/proofshot/assets/demo.tape.template .github/media/demo.tape
+cp skills/cliproof/assets/demo.tape.template .github/media/demo.tape
 # edit the Type/Enter/Sleep lines to run the real command(s)
 vhs .github/media/demo.tape   # writes .github/media/demo.gif
 ```
@@ -88,25 +88,25 @@ The template uses `Set WindowBar Colorful` for the macOS/iOS bar.
 ### 6. Redact secrets (mandatory gate before embedding)
 `capture.py` gave you SVG (text), so scan it directly:
 ```bash
-python skills/proofshot/scripts/redact.py .github/media/<name>.svg --in-place
+python skills/cliproof/scripts/redact.py .github/media/<name>.svg --in-place
 ```
 You can also pre-screen the raw output before capturing at all:
 ```bash
-<command> 2>&1 | python skills/proofshot/scripts/redact.py -
+<command> 2>&1 | python skills/cliproof/scripts/redact.py -
 ```
 If `redact.py` reports findings (exit `3`), the output contains likely secrets (API keys, tokens, passwords, JWTs, private IPs, home paths). **Do not embed it.** Re-run with sanitized env/args, or have the user confirm each finding is a false positive. Never commit an image you have not screened. **Always redact before rasterizing** (step 6b) — the PNG is a snapshot and cannot be re-scanned.
 
 ### 6b. Rasterize to PNG if needed, then look at it
 SVG embeds fine on GitHub, so this is optional — do it when you specifically need a raster (social previews, non-GitHub renderers):
 ```bash
-python skills/proofshot/scripts/rasterize.py .github/media/<name>.svg -o .github/media/<name>.png
+python skills/cliproof/scripts/rasterize.py .github/media/<name>.svg -o .github/media/<name>.png
 ```
 It uses a local renderer (Chromium browser → resvg → rsvg-convert → inkscape → magick); if none exists, embed the SVG. **Then open the rendered image and look at it** — confirm the text, encoding (no `Â`/`â€"` mojibake), and alignment are right. A non-empty file is *not* proof it rendered correctly; this visual check is what catches a corrupt capture.
 
 ### 7. Embed into README.md (idempotent, with confirmation)
 Use the helper so re-runs update in place instead of duplicating:
 ```bash
-python skills/proofshot/scripts/embed.py README.md \
+python skills/cliproof/scripts/embed.py README.md \
   --image ".github/media/<name>.png" \
   --alt "<command> running successfully" \
   --id "<name>" \
@@ -114,9 +114,9 @@ python skills/proofshot/scripts/embed.py README.md \
 ```
 It maintains a marked block:
 ```html
-<!-- proofshot:start id=<name> -->
+<!-- cliproof:start id=<name> -->
 ![alt](.github/media/<name>.png)
-<!-- proofshot:end id=<name> -->
+<!-- cliproof:end id=<name> -->
 ```
 Re-running with the same `--id` replaces that block; a new `--id` adds another. **Show the user the diff and get approval before writing.** Place hero shots high (right after the title/description or under a `## Demo` heading). If there is no `README.md`, offer to create one. Use repo-relative paths so images render on GitHub.
 

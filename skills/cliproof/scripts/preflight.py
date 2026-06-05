@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""preflight.py — report what proofshot can do on this machine.
+"""preflight.py — report what cliproof can do on this machine.
 
 Detects the OS and which capture tools are installed, then says which modes
 (static screenshot / animated GIF) are available and what to install otherwise.
@@ -64,7 +64,7 @@ def detect():
 
 
 def main(argv=None) -> int:
-    p = argparse.ArgumentParser(description="Report proofshot capture capabilities.")
+    p = argparse.ArgumentParser(description="Report cliproof capture capabilities.")
     p.add_argument("--json", action="store_true", help="emit machine-readable JSON")
     args = p.parse_args(argv)
 
@@ -74,7 +74,7 @@ def main(argv=None) -> int:
         print(json.dumps(info, indent=2))
         return 0
 
-    print("proofshot preflight")
+    print("cliproof preflight")
     print("  OS: {}".format(info["os"]))
     print("  tools:")
     for tool, present in info["tools"].items():

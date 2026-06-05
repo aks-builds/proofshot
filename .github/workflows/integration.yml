@@ -1,0 +1,81 @@
+name: integration
+
+# Real end-to-end test on Linux, where `freeze` runs (it crashes on native
+# Windows). Installs the actual tools and exercises the full pipeline:
+# capture -> redact -> embed -> check, plus a best-effort real GIF via vhs.
+# Informational — not a required status check.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with: { python-version: "3.12" }
+      - uses: actions/setup-go@v5
+        with: { go-version: "stable" }
+
+      - name: Install freeze
+        run: |
+          go install github.com/charmbracelet/freeze@v0.2.2
+          echo "$HOME/go/bin" >> "$GITHUB_PATH"
+
+      - name: Capture a real command (freeze --execute) and assert SVG
+        run: |
+          set -euo pipefail
+          S=skills/cliproof/scripts
+          python "$S/capture.py" --execute "python $S/preflight.py --json" \
+            --preset macos -o /tmp/shot.svg
+          test -s /tmp/shot.svg
+          head -c 64 /tmp/shot.svg | grep -q "<svg\|<?xml"
+          echo "OK: real capture produced an SVG"
+
+      - name: Redact the capture (must not block on clean output)
+        run: python skills/cliproof/scripts/redact.py /tmp/shot.svg --in-place
+
+      - name: Embed into a throwaway README and assert markers
+        run: |
+          set -euo pipefail
+          printf '# Demo\n\n## Demo\n' > /tmp/README.md
+          python skills/cliproof/scripts/embed.py /tmp/README.md \
+            --image /tmp/shot.svg --alt "preflight" --id e2e --heading Demo --no-backup
+          grep -q "cliproof:start id=e2e" /tmp/README.md
+          # idempotent: second run must not duplicate the block
+          python skills/cliproof/scripts/embed.py /tmp/README.md \
+            --image /tmp/shot.svg --alt "preflight" --id e2e --heading Demo --no-backup
+          test "$(grep -c 'cliproof:start id=e2e' /tmp/README.md)" = "1"
+          echo "OK: embed is idempotent"
+
+      - name: Freshness check round-trips (update then verify)
+        run: |
+          set -euo pipefail
+          python skills/cliproof/scripts/check.py --update
+          python skills/cliproof/scripts/check.py
+          echo "OK: freshness check passes"
+
+      - name: Rasterize SVG -> PNG (best effort; renderer may be absent)
+        continue-on-error: true
+        run: |
+          python skills/cliproof/scripts/rasterize.py /tmp/shot.svg -o /tmp/shot.png || true
+          test -s /tmp/shot.png && echo "OK: rasterized to PNG" || echo "no local renderer; SVG ships fine"
+
+      - name: Real animated GIF via vhs (best effort)
+        continue-on-error: true
+        run: |
+          set -uo pipefail
+          sudo apt-get update -y && sudo apt-get install -y ffmpeg ttyd || { echo "ttyd/ffmpeg unavailable; skipping GIF"; exit 0; }
+          go install github.com/charmbracelet/vhs@latest
+          export PATH="$HOME/go/bin:$PATH"
+          printf 'Output /tmp/demo.gif\nSet Width 600\nSet Height 200\nType "echo hello from cliproof"\nEnter\nSleep 1s\n' > /tmp/demo.tape
+          vhs /tmp/demo.tape
+          test -s /tmp/demo.gif && echo "OK: real GIF rendered" || echo "GIF step did not produce output"

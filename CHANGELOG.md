@@ -34,6 +34,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Theme presets** — `capture.py --preset macos|github-dark|nord|iterm|win11`.
 - **Custom redaction policy** — `redact.py` loads `.cliproof/redact.json`
   (`patterns` + `allow`) to add project secret patterns and exempt false positives.
+- **Test coverage for every advertised capability** — Node tests for the
+  agent-agnostic `install`/CLI (`test/cli.test.js`, run in CI), a guard test
+  asserting the scripts import only stdlib and no network modules
+  (`test_no_dependencies.py`), multi-language `verify` signature tests, and an
+  `integration.yml` workflow that installs real `freeze` and runs
+  capture → redact → embed → check end-to-end on Linux (plus a best-effort real
+  `vhs` GIF). 114 pytest + 5 Node tests.
 - **Release automation** — `release.yml` (dispatch → bump → sync npm + Claude
   marketplace manifests → release PR → auto-merge) and `publish.yml`
   (npm publish with provenance + tag + GitHub release). Requires `NPM_TOKEN` and

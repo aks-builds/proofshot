@@ -15,7 +15,7 @@
     "node": ">=18"
   },
   "scripts": {
-    "test": "node bin/cli.js --version"
+    "test": "node --test"
   },
   "keywords": [
     "terminal",

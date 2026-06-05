@@ -57,6 +57,8 @@ durable README proof.
 | Agent-agnostic install | ❌ | ✅ | ✅ |
 | Zero-dependency, no-network core | ❌ | ❌ | ✅ |
 
+<sub>cliproof's ✅s are backed by tests — see [Testing](#testing). (Animated GIF is exercised best-effort in CI since it needs `ttyd`; the PR-comment *post* is a `gh` side-effect, only its body is unit-tested.)</sub>
+
 ## Features
 
 - 📸 **Static screenshots** — macOS/iOS window or Windows-terminal look, one-flag themes (`--preset macos|github-dark|nord|iterm|win11`).
@@ -172,6 +174,15 @@ cliproof/
 ├── tests/                 pytest (87 tests)
 └── .github/               CI · CodeQL · Dependabot · release/publish · freshness action
 ```
+
+## Testing
+
+Every claim above is backed by tests, at one of two levels:
+
+- **Unit (114 pytest + 5 Node tests, runs on every PR):** redaction (+ policy/allowlist), command guard, idempotent embed, determinism + freshness engine, verify across languages, suggest, storyboard, annotate, capture-wrapper + theme presets, rasterizer selection, manifest validation, the agent-agnostic `install`, and a guard test that asserts the scripts import **only stdlib and no network modules**.
+- **Integration (`integration.yml`, real tools on Linux):** installs `freeze` and runs the full pipeline end-to-end — `capture --execute` → assert SVG → `redact` → `embed` (asserts idempotency) → `check` round-trip. A real `vhs` GIF is rendered **best-effort** (needs `ttyd`).
+
+Not asserted by tests: the `freeze` PNG rasterizer on Windows (it crashes there — that's *why* cliproof captures SVG), and the `gh` PR-comment network call (only the comment body is unit-tested). Run it all locally with `pytest -q` and `npm test`.
 
 ## Contributing
 

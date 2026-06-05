@@ -40,3 +40,14 @@ jobs:
           python skills/cliproof/scripts/preflight.py --json
           python skills/cliproof/scripts/guard.py -- "echo hello"
           echo "AKIAIOSFODNN7EXAMPLE" | python skills/cliproof/scripts/redact.py - || test $? -eq 3
+
+  cli:
+    name: cli
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+      - name: Run CLI tests (agent-agnostic install + passthrough)
+        run: npm test

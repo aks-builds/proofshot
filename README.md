@@ -2,17 +2,17 @@
 
 # 📸 cliproof
 
-**Prove your CLI actually works.**
+**Prove your CLI actually works — and keep it true.**
 
 Capture a **real** terminal command and its **real** output as a polished
-screenshot (or animated GIF) and embed it into your `README.md` — so GitHub
-visitors get instant confidence the project ships and runs.
+screenshot (or GIF), redact any secrets, and embed it into your `README.md` as
+proof-it-runs evidence — then let CI **fail if that proof ever goes stale.**
 
 [![CI](https://github.com/aks-builds/cliproof/actions/workflows/ci.yml/badge.svg)](https://github.com/aks-builds/cliproof/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/aks-builds/cliproof/actions/workflows/codeql.yml/badge.svg)](https://github.com/aks-builds/cliproof/actions/workflows/codeql.yml)
+[![npm](https://img.shields.io/npm/v/cliproof.svg)](https://www.npmjs.com/package/cliproof)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE.md)
-[![Agent Skill](https://img.shields.io/badge/Claude%20Code-Agent%20Skill-8A63D2.svg)](https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./CONTRIBUTING.md)
+[![Agent Skill](https://img.shields.io/badge/Agent-Skill-8A63D2.svg)](https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills)
 
 <br/>
 
@@ -28,103 +28,87 @@ visitors get instant confidence the project ships and runs.
 
 A README that *says* "it works" convinces no one. A screenshot of the command
 actually running — version banner, passing tests, real output — convinces
-everyone in two seconds. cliproof makes that screenshot **honest and
-repeatable**: it runs the real command, captures the genuine output, strips any
-secrets, and drops the image into your README in one pass.
+everyone in two seconds. cliproof makes that screenshot **honest, repeatable,
+and durable**: it runs the real command, captures the genuine output, strips
+any secrets, embeds it in your README, and can re-check in CI that the command
+still produces the same result.
 
-It's a [Claude Code Agent Skill](https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills),
-packaged as an installable plugin.
+It works as a **Claude Code Agent Skill**, an installable **plugin**, and an
+**agent-agnostic npm CLI** (`npm i -g cliproof`) for Cursor, Codex, OpenCode,
+Gemini CLI, Windsurf, or any agent that runs shell commands.
 
-### What makes it different
-Other tools generate animated CLI GIFs (via VHS) or render browser/HTML mockups.
-cliproof is the one that combines:
+## How is this different?
 
-1. **Real command + real output** as "proof it runs" — never a mock-up.
-2. **Static screenshots** via Charm [`freeze`](https://github.com/charmbracelet/freeze) (plus GIFs via [`vhs`](https://github.com/charmbracelet/vhs)).
-3. **Idempotent README embedding** — re-runs update in place, no duplicate images.
+Most "agent eyes" tools verify *browser/UI* sessions. cliproof verifies the
+**terminal** — the build, the test run, the CLI itself — and turns it into
+durable README proof.
 
-…with **secret redaction** and a **command-safety guard** enforced by code, not vibes.
+| | screenshot/GIF tools | browser-proof tools | **cliproof** |
+|---|:---:|:---:|:---:|
+| Real command + real output | ✅ | ➖ (browser) | ✅ |
+| Static screenshot (themed window) | some | ❌ | ✅ |
+| Animated GIF | ✅ | ✅ | ✅ |
+| Enforced secret redaction | ❌ | ❌ | ✅ |
+| Destructive-command guard | ❌ | ❌ | ✅ |
+| Idempotent README embed | ❌ | ❌ | ✅ |
+| **CI freshness check (fails when proof drifts)** | ❌ | ❌ | ✅ |
+| Pass/fail verify (10+ langs) | ❌ | ✅ | ✅ |
+| Proof → PR comment | ❌ | ✅ | ✅ |
+| Agent-agnostic install | ❌ | ✅ | ✅ |
+| Zero-dependency, no-network core | ❌ | ❌ | ✅ |
 
 ## Features
 
-- 📸 **Static screenshots** — styled like a macOS/iOS window (traffic-light bar) or a Windows terminal, with themes, shadows, and rounded corners.
-- 🎬 **Animated GIFs** — scripted typing + live output via `vhs` (macOS/Linux/WSL).
-- 🔒 **Enforced secret redaction** — masks API keys, tokens, JWTs, private keys; normalises emails, private IPs, and home paths *before* anything is committed.
-- 🛡️ **Command-safety guard** — refuses to capture destructive / exfiltration commands (`rm -rf /`, `curl … | sh`, credential reads, …).
-- ♻️ **Idempotent README inserts** — marker-based blocks with diff preview + backup.
-- 🧭 **Cross-platform preflight** — detects your OS and tools and tells you exactly what's possible.
-- 🧰 **Zero-dependency scripts** — pure Python standard library, no network calls, fully auditable.
-
-## How it works
-
-```
-choose command ─► guard (safe?) ─► run + capture real output ─► redact secrets
-                                                                      │
-        README  ◄── idempotent embed ◄── styled image (freeze/vhs) ◄──┘
-```
-
-Every step has a gate: the command is guarded before it runs, the output is
-redacted before it's written, and the README edit is shown as a diff before it's
-saved. cliproof never transmits anything off your machine.
+- 📸 **Static screenshots** — macOS/iOS window or Windows-terminal look, one-flag themes (`--preset macos|github-dark|nord|iterm|win11`).
+- 🎬 **Animated GIFs** — scripted typing + live output via `vhs`.
+- 🔒 **Enforced secret redaction** — masks API keys, tokens, JWTs, private keys; normalises emails/IPs/home paths *before* anything is committed. Extend with a `.cliproof/redact.json` policy (custom patterns + allowlist).
+- 🛡️ **Command-safety guard** — refuses destructive/exfiltration commands (`rm -rf /`, `curl … | sh`, credential reads).
+- ♻️ **Idempotent README inserts** — marker blocks with diff preview + backup.
+- 🎯 **Determinism + freshness check** — normalises volatile output (durations, timestamps, paths) and **fails CI when a proof drifts** from reality. Reusable GitHub Action included.
+- ✅ **Verify** — run a command and judge pass/fail from exit code + error signatures across 10+ languages; emit a PR-ready report.
+- 🧠 **Auto-suggest** — scans your repo (`package.json`/`Makefile`/`--help`/quickstart) for the best command to capture.
+- 🎞️ **Storyboard** — stitch a command sequence into one "session" image.
+- 💬 **PR proof** — post the screenshot + verdict as a pull-request comment.
+- 🧰 **Zero-dependency core** — pure Python stdlib, no network, fully auditable.
 
 ## Install
 
-**As a Claude Code plugin (recommended):**
-
+**Agent-agnostic (npm) — recommended for any agent:**
 ```bash
-/plugin marketplace add aks-builds/cliproof
-/plugin install cliproof@cliproof
+npm install -g cliproof
+cliproof install        # detects Claude Code, Cursor, Codex, OpenCode, Gemini, Windsurf
 ```
 
-> The `@cliproof` suffix is the **marketplace name** from
-> `.claude-plugin/marketplace.json` — not the repo path.
+**Claude Code plugin:**
+```bash
+/plugin marketplace add aks-builds/cliproof
+/plugin install cliproof@cliproof   # @cliproof is the marketplace name, not the repo path
+```
 
-**As a personal skill (manual):** copy `skills/cliproof/` into
-`~/.claude/skills/cliproof/` (or `.claude/skills/cliproof/` per-project).
+**Manual skill:** copy `skills/cliproof/` into `~/.claude/skills/cliproof/`.
 
-**Capture tools** (installed on demand, from official sources, version-pinned):
-
+**Capture tools** (installed on demand, official sources, version-pinned):
 - `freeze` — `go install github.com/charmbracelet/freeze@v0.2.2` · `brew install charmbracelet/tap/freeze` · `scoop install freeze`
 - `vhs` (GIFs only) — `brew install vhs` (needs `ffmpeg` + `ttyd`; on Windows use WSL)
 
 ## Usage
 
-Once installed, just ask:
-
-> *"screenshot `myapp --help` for the README"*
-> *"make a demo GIF of the build running"*
-> *"add proof that the tests pass to the readme"*
-
-Under the hood the skill runs its helpers (also runnable directly):
+In your agent, just ask: *"screenshot `myapp --help` for the README"* or
+*"add proof the tests pass"*. Under the hood (also runnable directly, or via the
+`cliproof <cmd>` CLI):
 
 ```bash
-# 1. what can this machine do?
-python skills/cliproof/scripts/preflight.py
-
-# 2. is the command safe to capture?
-python skills/cliproof/scripts/guard.py -- "myapp --help"
-
-# 3. capture (macOS/iOS look) → wraps freeze: closes stdin, writes redactable SVG
-python skills/cliproof/scripts/capture.py --execute "myapp --help" \
-  --window --theme dracula -o .github/media/help.svg
-
-# 4. strip any secrets before committing (always redact before rasterizing)
-python skills/cliproof/scripts/redact.py .github/media/help.svg --in-place
-
-# 5. (optional) rasterize the redacted SVG to PNG — SVG also embeds fine on GitHub
-python skills/cliproof/scripts/rasterize.py .github/media/help.svg
-
-# 6. embed idempotently (prints a diff; writes a .bak)
-python skills/cliproof/scripts/embed.py README.md \
-  --image .github/media/help.svg --alt "myapp --help" --id help --heading Demo
+cliproof suggest .                                   # what's the best proof command?
+cliproof guard -- "myapp --help"                     # safe to capture?
+cliproof capture --execute "myapp --help" \
+  --preset macos -o .github/media/help.svg           # real capture → redactable SVG
+cliproof redact .github/media/help.svg --in-place    # strip secrets (exit 3 = blocked)
+cliproof embed README.md --image .github/media/help.svg \
+  --alt "myapp --help" --id help --heading Demo       # idempotent insert (diff + .bak)
 ```
 
-> `capture.py` exists because raw `freeze` **hangs** on an inherited stdin pipe
-> (any agent/CI shell) and its PNG rasterizer can **crash** on Windows.
-> `capture.py` closes stdin and captures SVG; `rasterize.py` makes the PNG.
-
-`embed.py` maintains a keyed, marker-delimited block, so re-running with the
-same `--id` updates the image in place instead of appending a duplicate:
+`embed` maintains a keyed marker block, so re-running with the same `--id`
+updates in place instead of duplicating:
 
 ```html
 <!-- cliproof:start id=help -->
@@ -132,37 +116,65 @@ same `--id` updates the image in place instead of appending a duplicate:
 <!-- cliproof:end id=help -->
 ```
 
+> `capture` wraps `freeze`: it closes stdin (raw `freeze` **hangs** on an
+> inherited pipe in agent/CI shells) and writes **SVG** (its PNG rasterizer can
+> **crash** on Windows). Use `rasterize` to make a PNG after redaction.
+
+## Keep your proofs fresh (the moat)
+
+A screenshot proves your CLI worked *once*. cliproof keeps it honest. Record a
+baseline of the command's normalised output, list it in `.cliproof/proof.json`,
+and let CI re-run it and **fail if it drifts**:
+
+```jsonc
+// .cliproof/proof.json
+{ "proofs": [
+  { "id": "cli-help", "command": "myapp --help",
+    "baseline": ".github/media/cli-help.cliproof.txt",
+    "image": ".github/media/cli-help.svg" } ] }
+```
+
+```yaml
+# .github/workflows/freshness.yml
+- uses: aks-builds/cliproof/.github/actions/cliproof-check@v1
+  with: { manifest: .cliproof/proof.json }
+```
+
+`cliproof check --update` records baselines; `cliproof check` compares. Volatile
+noise (durations, timestamps, temp paths, ports) is normalised so only *real*
+drift ("3 tests now fail") fails the build.
+
 ## Security
 
 cliproof runs real shell commands and writes into your repo, so security is
-enforced by code:
+enforced by code, not by convention:
 
-- **Pure stdlib, no network** — the scripts have zero third-party dependencies, no build step, and no telemetry. Audit them in [`skills/cliproof/scripts/`](./skills/cliproof/scripts/).
-- **Redaction before embedding** — [`redact.py`](./skills/cliproof/scripts/redact.py) blocks SECRET-class findings (exit 3) and normalises personal data.
-- **Command guard** — [`guard.py`](./skills/cliproof/scripts/guard.py) refuses destructive/exfiltration commands.
-- **Pinned, official tools** — `freeze`/`vhs` are version-pinned and installed only with your confirmation.
+- **Pure stdlib, no network** — zero third-party deps, no build step, no telemetry. Audit [`skills/cliproof/scripts/`](./skills/cliproof/scripts/).
+- **Redaction before embedding** — `redact.py` blocks SECRET-class findings (exit 3); extend via `.cliproof/redact.json`.
+- **Command guard** — `guard.py` refuses destructive/exfiltration commands.
+- **Pinned, official tools** — `freeze`/`vhs` version-pinned, installed only with confirmation.
 
-Full threat model: [`references/security.md`](./skills/cliproof/references/security.md).
-Report issues privately: [SECURITY.md](./SECURITY.md).
+Threat model: [`references/security.md`](./skills/cliproof/references/security.md). Report privately: [SECURITY.md](./SECURITY.md).
 
 ## Repository layout
 
 ```
 cliproof/
-├── .claude-plugin/
-│   ├── plugin.json          plugin manifest
-│   └── marketplace.json     self-hosted marketplace manifest
+├── .claude-plugin/        plugin.json · marketplace.json
+├── bin/cli.js             agent-agnostic npm CLI (install + passthrough)
 ├── skills/cliproof/
-│   ├── SKILL.md             the skill (rules, workflow, gates)
-│   ├── references/          tooling.md · security.md
-│   ├── scripts/             preflight · guard · capture · redact · rasterize · embed (pure stdlib)
-│   └── assets/              demo.tape.template (VHS)
-├── tests/                   pytest: manifest validation + script tests
-└── .github/                 CI · CodeQL · Dependabot · templates · media
+│   ├── SKILL.md           the skill (rules, workflow, gates)
+│   ├── references/        tooling.md · security.md
+│   ├── scripts/           preflight · guard · capture · redact · rasterize · embed
+│   │                      · normalize · check · suggest · verify · storyboard · annotate · pr
+│   └── assets/            demo.tape.template (VHS)
+├── .cliproof/             proof.json (freshness manifest) · redact.json (policy)
+├── tests/                 pytest (87 tests)
+└── .github/               CI · CodeQL · Dependabot · release/publish · freshness action
 ```
 
 ## Contributing
 
 PRs welcome — see [CONTRIBUTING.md](./CONTRIBUTING.md). Good first contributions:
-new redaction patterns, guard rules, and `freeze`/`vhs` style presets. Found a
-security issue? See [SECURITY.md](./SECURITY.md). Licensed under [MIT](./LICENSE.md).
+redaction patterns, guard rules, themes, language signatures for `verify`. Found
+a security issue? See [SECURITY.md](./SECURITY.md). Licensed under [MIT](./LICENSE.md).

@@ -21,6 +21,7 @@ Severity:
 Pure standard library. No network. No side effects beyond the optional rewrite.
 """
 import argparse
+import os
 import re
 import sys
 
@@ -80,14 +81,50 @@ _RULES = [
 ]
 
 
-def redact(text: str):
-    """Return (redacted_text, findings) where findings is a list of (name, severity, count)."""
+def load_policy(path):
+    """Load .cliproof/redact.json -> (extra_rules, allow_patterns).
+
+    Schema: {"patterns": ["regex", ...], "allow": ["regex", ...]}
+    `patterns` add SECRET-class rules; `allow` exempts false positives (a match
+    that also matches an allow regex is left untouched).
+    """
+    import json
+    extra, allow = [], []
+    if not path or not os.path.exists(path):
+        return extra, allow
+    with open(path, "r", encoding="utf-8-sig") as fh:
+        data = json.load(fh)
+    for i, pat in enumerate(data.get("patterns", [])):
+        extra.append(("custom-{}".format(i), SECRET, re.compile(pat), _mask_match))
+    allow = list(data.get("allow", []))
+    return extra, allow
+
+
+def redact(text: str, extra_rules=None, allow=None):
+    """Return (redacted_text, findings) as a list of (name, severity, count).
+
+    extra_rules: extra (name, severity, compiled_regex, repl) tuples.
+    allow: regex strings; a match also matching one of these is left as-is.
+    """
+    rules = list(_RULES) + list(extra_rules or [])
+    allow_res = [re.compile(a) for a in (allow or [])]
+
+    def _allowed(s):
+        return any(a.search(s) for a in allow_res)
+
     findings = []
-    for name, severity, rx, repl in _RULES:
-        count = len(rx.findall(text))
-        if count:
-            text = rx.sub(repl, text)
-            findings.append((name, severity, count))
+    for name, severity, rx, repl in rules:
+        hits = [m for m in rx.finditer(text) if not _allowed(m.group(0))]
+        if not hits:
+            continue
+
+        def _sub(m, _repl=repl):
+            if _allowed(m.group(0)):
+                return m.group(0)
+            return _repl(m) if callable(_repl) else _repl
+
+        text = rx.sub(_sub, text)
+        findings.append((name, severity, len(hits)))
     return text, findings
 
 
@@ -95,6 +132,8 @@ def main(argv=None) -> int:
     p = argparse.ArgumentParser(description="Mask secrets/PII in captured output.")
     p.add_argument("path", help="file to scan, or '-' for stdin")
     p.add_argument("--in-place", action="store_true", help="rewrite the file with redacted text")
+    p.add_argument("--policy", default=os.path.join(".cliproof", "redact.json"),
+                   help="custom redaction policy JSON (patterns + allowlist)")
     args = p.parse_args(argv)
 
     if args.path == "-":
@@ -105,7 +144,11 @@ def main(argv=None) -> int:
         with open(args.path, "r", encoding="utf-8-sig", errors="replace") as fh:
             text = fh.read()
 
-    redacted, findings = redact(text)
+    extra_rules, allow = load_policy(args.policy)
+    if extra_rules or allow:
+        print("redact: loaded policy {} (+{} patterns, {} allow)".format(
+            args.policy, len(extra_rules), len(allow)), file=sys.stderr)
+    redacted, findings = redact(text, extra_rules=extra_rules, allow=allow)
 
     if args.in_place and args.path != "-":
         # newline="\n": write LF on every platform (no Windows CRLF translation).

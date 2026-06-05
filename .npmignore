@@ -1,0 +1,10 @@
+# Keep the npm tarball lean. (package.json "files" already allowlists what
+# ships; this excludes cruft from inside those paths.)
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+tests/
+.cliproof/
+.github/
+*.bak

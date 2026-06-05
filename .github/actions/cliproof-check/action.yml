@@ -1,0 +1,29 @@
+name: "cliproof check"
+description: "Fail the build when a README proof has drifted from the real command output."
+branding:
+  icon: "check-circle"
+  color: "purple"
+
+inputs:
+  manifest:
+    description: "Path to the cliproof proof manifest (.cliproof/proof.json)."
+    required: false
+    default: ".cliproof/proof.json"
+  python-version:
+    description: "Python version used to run the check."
+    required: false
+    default: "3.12"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Check proofs are fresh
+      shell: bash
+      run: |
+        python "${{ github.action_path }}/../../../skills/cliproof/scripts/check.py" \
+          --manifest "${{ inputs.manifest }}"

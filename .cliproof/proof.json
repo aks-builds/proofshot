@@ -1,0 +1,11 @@
+{
+  "$comment": "Proofs cliproof keeps fresh. Each entry: id, command (re-run in CI), baseline (normalised expected output), and the image embedded in the README. `cliproof check` fails if a command's normalised output drifts from its baseline. Use a deterministic, cross-platform command here.",
+  "proofs": [
+    {
+      "id": "guard-ok",
+      "command": "python skills/cliproof/scripts/guard.py -- \"echo hello\"",
+      "baseline": ".cliproof/guard-ok.cliproof.txt",
+      "image": ".github/media/hero.svg"
+    }
+  ]
+}

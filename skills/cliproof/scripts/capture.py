@@ -86,8 +86,61 @@ def partition(argv):
     return output, freeze_bin, passthrough
 
 
+# Named look-and-feel presets. Each is a list of (flag, value) pairs; value
+# None means a boolean flag. A user-supplied flag always wins over the preset.
+PRESETS = {
+    "macos": [("--window", None), ("--theme", "dracula"), ("--background", "#0d1117"),
+              ("--border.radius", "8"), ("--padding", "24"), ("--margin", "20"),
+              ("--shadow.blur", "24"), ("--shadow.y", "12")],
+    "github-dark": [("--window", None), ("--theme", "github"), ("--background", "#0d1117"),
+                    ("--border.radius", "8"), ("--padding", "24"), ("--margin", "20")],
+    "nord": [("--window", None), ("--theme", "nord"), ("--background", "#2e3440"),
+             ("--border.radius", "8"), ("--padding", "24"), ("--margin", "20")],
+    "iterm": [("--window", None), ("--theme", "catppuccin-mocha"), ("--background", "#1e1e2e"),
+              ("--border.radius", "10"), ("--padding", "24"), ("--margin", "20"),
+              ("--shadow.blur", "24"), ("--shadow.y", "12")],
+    "win11": [("--theme", "github"), ("--background", "#0c0c0c"), ("--border.radius", "0"),
+              ("--border.width", "1"), ("--border.color", "#3a3a3a"),
+              ("--padding", "20"), ("--margin", "12")],
+}
+
+
 def _has_flag(passthrough, name):
     return any(a == name or a.startswith(name + "=") for a in passthrough)
+
+
+def extract_preset(passthrough):
+    """Pull a `--preset NAME` / `--preset=NAME` out of passthrough.
+
+    Returns (preset_name_or_None, passthrough_without_preset). freeze doesn't
+    know --preset, so it must be consumed here before the command is built.
+    """
+    out, preset, i, n = [], None, 0, len(passthrough)
+    while i < n:
+        a = passthrough[i]
+        if a == "--preset":
+            if i + 1 < n:
+                preset = passthrough[i + 1]
+                i += 2
+                continue
+            i += 1
+            continue
+        if a.startswith("--preset="):
+            preset = a.split("=", 1)[1]
+            i += 1
+            continue
+        out.append(a)
+        i += 1
+    return preset, out
+
+
+def preset_flags(name, passthrough):
+    """Flags a preset contributes, skipping any the user already set."""
+    flags = []
+    for flag, val in PRESETS.get(name, []):
+        if not _has_flag(passthrough, flag):
+            flags += [flag] if val is None else [flag, val]
+    return flags
 
 
 def needs_language(passthrough) -> bool:
@@ -111,9 +164,12 @@ def strip_bom(path) -> bool:
     return False
 
 
-def build_command(freeze_bin, passthrough, svg_path):
-    """Assemble the final freeze argv (language injected, output forced to SVG)."""
-    cmd = [freeze_bin] + list(passthrough)
+def build_command(freeze_bin, passthrough, svg_path, preset=None):
+    """Assemble the final freeze argv (preset + language injected, output forced to SVG)."""
+    cmd = [freeze_bin]
+    if preset:
+        cmd += preset_flags(preset, passthrough)
+    cmd += list(passthrough)
     if needs_language(passthrough):
         cmd += ["--language", "ansi"]
     cmd += ["--output", svg_path]
@@ -138,6 +194,12 @@ def main(argv=None) -> int:
         print("capture: {}".format(exc), file=sys.stderr)
         return 1
 
+    preset, passthrough = extract_preset(passthrough)
+    if preset and preset not in PRESETS:
+        print("capture: unknown --preset '{}'. Choose from: {}".format(
+            preset, ", ".join(sorted(PRESETS))), file=sys.stderr)
+        return 1
+
     if not output:
         print("capture: -o/--output is required (e.g. -o .github/media/help.svg)", file=sys.stderr)
         return 1
@@ -158,7 +220,7 @@ def main(argv=None) -> int:
     parent = os.path.dirname(os.path.abspath(svg_path))
     os.makedirs(parent, exist_ok=True)
 
-    cmd = build_command(freeze_bin, passthrough, svg_path)
+    cmd = build_command(freeze_bin, passthrough, svg_path, preset=preset)
     try:
         # stdin=DEVNULL is the fix: never let freeze block on an inherited pipe.
         proc = subprocess.run(cmd, stdin=subprocess.DEVNULL,

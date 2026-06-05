@@ -1,0 +1,24 @@
+name: freshness
+
+# Dogfoods cliproof's own freshness check: re-runs the proof commands in
+# .cliproof/proof.json and fails if their (normalised) output drifted from the
+# committed baseline. Informational — not a required status check.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: cliproof check
+        uses: ./.github/actions/cliproof-check
+        with:
+          manifest: .cliproof/proof.json

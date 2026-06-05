@@ -106,3 +106,26 @@ def test_main_strips_bom_from_freeze_output(tmp_path, monkeypatch):
 
     assert capture.main(["--execute", "echo hi", "-o", str(out)]) == 0
     assert out.read_bytes()[:3] != b"\xef\xbb\xbf"
+
+
+def test_extract_preset_consumes_flag():
+    preset, rest = capture.extract_preset(["--preset", "macos", "--window", "--execute", "ls"])
+    assert preset == "macos"
+    assert rest == ["--window", "--execute", "ls"]
+    preset2, rest2 = capture.extract_preset(["--preset=nord", "--execute", "ls"])
+    assert preset2 == "nord" and rest2 == ["--execute", "ls"]
+    assert capture.extract_preset(["--execute", "ls"]) == (None, ["--execute", "ls"])
+
+
+def test_build_command_applies_preset_and_user_overrides():
+    # preset contributes --theme dracula; build_command injects it
+    cmd = capture.build_command("freeze", ["--execute", "ls"], "o.svg", preset="macos")
+    assert "--window" in cmd and "dracula" in cmd
+    # a user-supplied --theme wins over the preset's
+    cmd2 = capture.build_command("freeze", ["--execute", "ls", "--theme", "nord"], "o.svg", preset="macos")
+    assert "nord" in cmd2 and "dracula" not in cmd2
+
+
+def test_main_rejects_unknown_preset(capsys):
+    assert capture.main(["--preset", "nope", "--execute", "ls", "-o", "x.svg"]) == 1
+

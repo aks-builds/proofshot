@@ -46,6 +46,24 @@ pytest -q
 - **Style presets** — new `freeze`/`vhs` looks in `references/tooling.md`.
 - **Cross-platform fixes** — Windows/macOS/Linux/WSL capture edge cases.
 
+## Releasing (maintainers)
+
+Releases are automated. Run the **release** workflow (Actions → release →
+*Run workflow*) and pick a bump (`patch`/`minor`/`major`/`prerelease`). It:
+
+1. bumps `package.json` and syncs the version into `.claude-plugin/plugin.json`
+   and `.claude-plugin/marketplace.json` (the Claude marketplace),
+2. rolls `CHANGELOG.md` `[Unreleased]` → `[x.y.z]`,
+3. opens a `release/*` PR with auto-merge enabled.
+
+Once CI's required `test` check passes, the PR merges and **publish.yml** ships
+to npm (with provenance), tags the commit, and cuts a GitHub release.
+
+Required repo secrets:
+- `NPM_TOKEN` — npm automation token (publish).
+- `RELEASE_PR_PAT` — a user PAT (repo scope) so the release PR triggers CI;
+  `GITHUB_TOKEN`-opened PRs do not fire downstream workflows.
+
 ## Reporting bugs / ideas
 
 Use the issue templates. For anything security-sensitive, follow

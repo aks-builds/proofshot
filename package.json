@@ -1,0 +1,44 @@
+{
+  "name": "cliproof",
+  "version": "0.1.0",
+  "description": "Prove your CLI actually works. Captures a real terminal command and its real output as a polished screenshot or GIF, redacts secrets, and embeds it into your README as proof-it-runs evidence. Agent-agnostic (Claude Code, Cursor, Codex, OpenCode, Gemini, Windsurf).",
+  "bin": {
+    "cliproof": "bin/cli.js"
+  },
+  "files": [
+    "bin/",
+    "skills/",
+    "README.md",
+    "LICENSE.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node bin/cli.js --version"
+  },
+  "keywords": [
+    "terminal",
+    "screenshot",
+    "cli",
+    "readme",
+    "demo",
+    "gif",
+    "vhs",
+    "freeze",
+    "documentation",
+    "developer-tools",
+    "claude-code",
+    "agent-skills"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aks-builds/cliproof.git"
+  },
+  "homepage": "https://github.com/aks-builds/cliproof#readme",
+  "bugs": {
+    "url": "https://github.com/aks-builds/cliproof/issues"
+  },
+  "author": "aks-builds",
+  "license": "MIT"
+}

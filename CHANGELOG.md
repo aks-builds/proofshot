@@ -15,6 +15,29 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   the embed marker is `<!-- cliproof:start -->`.
 
 ### Added
+- **Agent-agnostic npm CLI** (`npm i -g cliproof`) — `bin/cli.js` (zero deps):
+  `cliproof install` copies the skill into Claude Code, Cursor, Codex, OpenCode,
+  Gemini CLI, and Windsurf; `cliproof <cmd>` passes through to the Python
+  pipeline; `cliproof doctor` reports capabilities.
+- **Determinism + freshness check** — `scripts/normalize.py` neutralises volatile
+  tokens (durations, timestamps, UUIDs, hashes, temp paths, ports) and
+  `scripts/check.py` re-runs proof commands listed in `.cliproof/proof.json`,
+  failing on real drift. Reusable composite action `.github/actions/cliproof-check`
+  and a `freshness.yml` workflow keep README proofs honest in CI.
+- **`scripts/verify.py`** — runs a command and judges PASS/FAIL from the exit code
+  plus error signatures across 10+ languages; emits a PR-ready Markdown report.
+- **`scripts/suggest.py`** — scans a repo (package.json/Makefile/pyproject/--help/
+  README quickstart) and ranks the best "proof it runs" commands.
+- **`scripts/storyboard.py`** — stitches multiple SVG captures into one vertical
+  session image; **`scripts/annotate.py`** adds a caption bar (frame only).
+- **`scripts/pr.py`** — posts the screenshot + verify verdict as a GitHub PR comment.
+- **Theme presets** — `capture.py --preset macos|github-dark|nord|iterm|win11`.
+- **Custom redaction policy** — `redact.py` loads `.cliproof/redact.json`
+  (`patterns` + `allow`) to add project secret patterns and exempt false positives.
+- **Release automation** — `release.yml` (dispatch → bump → sync npm + Claude
+  marketplace manifests → release PR → auto-merge) and `publish.yml`
+  (npm publish with provenance + tag + GitHub release). Requires `NPM_TOKEN` and
+  `RELEASE_PR_PAT` secrets.
 - **`scripts/capture.py`** — reliable wrapper around `freeze`: launches it with
   stdin closed, forces `--language ansi` for `--execute`, and captures to SVG.
   All `freeze` style flags pass through. This is now the recommended way to

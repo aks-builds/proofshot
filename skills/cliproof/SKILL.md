@@ -124,11 +124,24 @@ Re-running with the same `--id` replaces that block; a new `--id` adds another. 
 - Run the command, capture raw output, pipe through `redact.py`, and embed it in a fenced code block as a labelled text stopgap (clearly: text, not an image).
 - Or suggest a lighter tool the user may have (`termshot`, `carbon-now-cli`, `silicon`) or a manual OS screenshot.
 
+## More capabilities (use when relevant)
+- **Pick the command** — `python scripts/suggest.py <repo>` scans `package.json`, `Makefile`, `pyproject`, `--help`, and the README quickstart and ranks the best "proof it runs" commands. Use it when the user hasn't named a command.
+- **Themes in one flag** — `capture.py --preset macos|github-dark|nord|iterm|win11` expands to a full styled look (user flags still override).
+- **Verify pass/fail** — `python scripts/verify.py --command "<cmd>" --report verify.md` runs the command and judges PASS/FAIL from the exit code + error signatures across 10+ languages. Use for "prove the tests/build pass" and to attach a verdict.
+- **Keep proofs fresh** — record `python scripts/check.py --update` (writes a normalised baseline next to the image) and list each proof in `.cliproof/proof.json`. `check.py` (no args) re-runs commands and fails on drift; wire the reusable action `.github/actions/cliproof-check` into CI so the README never lies. `normalize.py` neutralises volatile tokens (durations, timestamps, paths, ports) so only real drift fails.
+- **Custom redaction** — drop a `.cliproof/redact.json` (`{"patterns": [...], "allow": [...]}`) to add project secret patterns and exempt false positives; `redact.py` loads it automatically.
+- **Storyboard** — `python scripts/storyboard.py -o session.svg a.svg b.svg c.svg` stitches a command sequence into one image.
+- **Caption** — `python scripts/annotate.py in.svg --caption "all 42 tests pass" -o out.svg` adds a labelled bar (frame only; never edits the captured text).
+- **Proof to a PR** — `python scripts/pr.py --pr <n> --image-url <raw-url> --verify verify.md` posts the screenshot + verdict as a PR comment (needs `gh`).
+
 ## Guardrails recap
 - Real output only · secrets redacted (enforced) · command guarded · local-only · confirm installs/writes/commits · don't pass off failing commands as "proof it works" unless the user wants an error-state shot · keep images reasonably sized.
 
 ## Reference files
 - `references/tooling.md` — install matrix, full `freeze`/`vhs` flag and tape reference, macOS vs Windows style presets, cross-platform notes.
 - `references/security.md` — threat model, what each script does, redaction patterns, command-guard rationale, supply-chain notes.
-- `scripts/preflight.py` · `scripts/guard.py` · `scripts/capture.py` · `scripts/redact.py` · `scripts/rasterize.py` · `scripts/embed.py` — pure Python stdlib, no network, auditable. Run with `--help`.
+- `scripts/` (all pure Python stdlib, no network, auditable; run with `--help`):
+  `preflight` · `guard` · `capture` · `redact` · `rasterize` · `embed` ·
+  `normalize` · `check` · `suggest` · `verify` · `storyboard` · `annotate` · `pr`.
 - `assets/demo.tape.template` — ready-to-edit VHS tape for an animated GIF.
+- `.cliproof/proof.json` (freshness manifest) and `.cliproof/redact.json` (redaction policy) live at the repo root, not in the skill dir.

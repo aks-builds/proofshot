@@ -1,0 +1,9 @@
+{
+  "$comment": "Optional custom redaction policy for `redact.py`. `patterns` add SECRET-class regexes to mask; `allow` exempts false positives (a match that also matches an allow regex is left untouched). Examples below are illustrative — edit for your project.",
+  "patterns": [
+    "ACME_API_[A-Z0-9]{16,}"
+  ],
+  "allow": [
+    "EXAMPLE_PLACEHOLDER_NOT_A_SECRET"
+  ]
+}

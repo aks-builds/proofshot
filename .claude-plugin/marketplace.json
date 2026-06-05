@@ -1,0 +1,29 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "proofshot",
+  "owner": {
+    "name": "aks-builds",
+    "url": "https://github.com/aks-builds"
+  },
+  "metadata": {
+    "description": "Proof-it-runs terminal evidence for your repos — by aks-builds.",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "proofshot",
+      "source": "./",
+      "description": "Capture a real terminal command and its real output as a polished screenshot or GIF, then embed it into README.md as proof the software works. Static screenshots via Charm `freeze`; animated demos via `vhs`. Enforced secret redaction, command-safety guard, and idempotent README inserts.",
+      "version": "0.1.0",
+      "license": "MIT",
+      "keywords": [
+        "terminal",
+        "screenshot",
+        "cli",
+        "readme",
+        "demo",
+        "gif"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+import embed
+
+
+def test_creates_block_under_heading():
+    text = "# Title\n\nIntro.\n\n## Demo\n\nold text\n"
+    out = embed.upsert(text, ".github/media/a.png", "a running", "a", "Demo")
+    assert "<!-- proofshot:start id=a -->" in out
+    assert "![a running](.github/media/a.png)" in out
+    # inserted right after the heading
+    assert out.index("proofshot:start") > out.index("## Demo")
+
+
+def test_idempotent_replace_same_id():
+    text = "# T\n\n## Demo\n"
+    once = embed.upsert(text, ".github/media/a.png", "alt1", "a", "Demo")
+    twice = embed.upsert(once, ".github/media/a-v2.png", "alt2", "a", "Demo")
+    # exactly one block, updated to the new image
+    assert twice.count("<!-- proofshot:start id=a -->") == 1
+    assert "a-v2.png" in twice
+    assert "alt2" in twice
+    assert "alt1" not in twice
+
+
+def test_different_ids_coexist():
+    text = "# T\n"
+    out = embed.upsert(text, "x.png", "x", "one", "Demo")
+    out = embed.upsert(out, "y.png", "y", "two", "Demo")
+    assert out.count("proofshot:start") == 2
+    assert "id=one" in out and "id=two" in out
+
+
+def test_appends_heading_when_absent():
+    out = embed.upsert("# T\n\nbody\n", "z.png", "z", "z", "Screenshots")
+    assert "## Screenshots" in out
+    assert "proofshot:start id=z" in out
+
+
+def test_windows_path_normalised_to_forward_slashes():
+    out = embed.upsert("# T\n", r".github\media\a.png", "a", "a", "Demo")
+    assert ".github/media/a.png" in out
+    assert "\\" not in out.split("](", 1)[1].split(")", 1)[0]

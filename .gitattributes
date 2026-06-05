@@ -1,0 +1,14 @@
+# Normalise line endings: keep text LF in the repo.
+* text=auto eol=lf
+
+# Scripts must stay LF.
+*.py text eol=lf
+*.sh text eol=lf
+
+# Treat images as binary.
+*.png binary
+*.gif binary
+*.webp binary
+
+# Mark generated media so GitHub language stats ignore it.
+.github/media/** linguist-generated=true

@@ -59,22 +59,21 @@ If preflight shows the tool is missing, ask the user before installing. See `ref
 
 Install **locally**, never globally beyond the user's own toolchain. If install is declined, go to step 8 (fallback).
 
-### 5. Generate the media into `.github/media/`
-Create the folder if absent. Use a descriptive kebab-case filename tied to the command (`cli-help.png`, `build-passing.png`, `demo.gif`).
+### 5. Capture to SVG via `capture.py` (don't call `freeze` directly)
+Create `.github/media/` if absent. Use a descriptive kebab-case name (`cli-help`, `build-passing`).
+`capture.py` wraps `freeze` and applies three fixes that otherwise break captures in agent/CI shells: it **closes stdin** (raw `freeze` *hangs* on an inherited pipe), captures to **SVG** (avoids `freeze`'s PNG rasterizer, which can *crash* on Windows, and keeps the output redactable), and forces `--language ansi`. All `freeze` style flags pass straight through.
 
-**Static screenshot (freeze) — macOS/iOS window look (default):**
+**macOS/iOS window look (default):**
 ```bash
-freeze --execute "<command>" \
-  --window \
-  --theme "dracula" \
-  --background "#0d1117" \
+python skills/proofshot/scripts/capture.py --execute "<command>" \
+  --window --theme "dracula" --background "#0d1117" \
   --padding 24 --margin 20 \
   --border.radius 8 --border.width 1 --border.color "#30363d" \
   --shadow.blur 24 --shadow.y 12 \
   --font.family "JetBrains Mono" --font.size 14 \
-  --output ".github/media/<name>.png"
+  -o ".github/media/<name>.svg"
 ```
-For a **Windows-terminal look**: drop `--window`, use `--background "#0c0c0c"`, square corners (`--border.radius 0`). Full flag reference and style presets are in `references/tooling.md`.
+For a **Windows-terminal look**: drop `--window`, use `--background "#0c0c0c"`, square corners (`--border.radius 0`). Full flag reference, style presets, and the per-failure-mode reliability table are in `references/tooling.md`.
 
 On Windows, wrap shell built-ins: `--execute "powershell -NoProfile -Command \"<cmd>\""` or `--execute "cmd /c <cmd>"`. Prefer running the real project binary directly.
 
@@ -87,15 +86,22 @@ vhs .github/media/demo.tape   # writes .github/media/demo.gif
 The template uses `Set WindowBar Colorful` for the macOS/iOS bar.
 
 ### 6. Redact secrets (mandatory gate before embedding)
-Scan the captured artifact's text. For SVG output (text-based), scan directly:
+`capture.py` gave you SVG (text), so scan it directly:
 ```bash
 python skills/proofshot/scripts/redact.py .github/media/<name>.svg --in-place
 ```
-For raster PNG/GIF you cannot scan pixels, so **capture to SVG first, redact, then convert** — or, more simply, **run the command once, pipe its output through `redact.py`, and review** before generating the image:
+You can also pre-screen the raw output before capturing at all:
 ```bash
 <command> 2>&1 | python skills/proofshot/scripts/redact.py -
 ```
-If `redact.py` reports findings (exit `3`), the output contains likely secrets (API keys, tokens, passwords, JWTs, private IPs, home paths). **Do not embed it.** Re-run with sanitized env/args, or have the user confirm each finding is a false positive. Never commit an image you have not screened.
+If `redact.py` reports findings (exit `3`), the output contains likely secrets (API keys, tokens, passwords, JWTs, private IPs, home paths). **Do not embed it.** Re-run with sanitized env/args, or have the user confirm each finding is a false positive. Never commit an image you have not screened. **Always redact before rasterizing** (step 6b) — the PNG is a snapshot and cannot be re-scanned.
+
+### 6b. Rasterize to PNG if needed, then look at it
+SVG embeds fine on GitHub, so this is optional — do it when you specifically need a raster (social previews, non-GitHub renderers):
+```bash
+python skills/proofshot/scripts/rasterize.py .github/media/<name>.svg -o .github/media/<name>.png
+```
+It uses a local renderer (Chromium browser → resvg → rsvg-convert → inkscape → magick); if none exists, embed the SVG. **Then open the rendered image and look at it** — confirm the text, encoding (no `Â`/`â€"` mojibake), and alignment are right. A non-empty file is *not* proof it rendered correctly; this visual check is what catches a corrupt capture.
 
 ### 7. Embed into README.md (idempotent, with confirmation)
 Use the helper so re-runs update in place instead of duplicating:
@@ -124,5 +130,5 @@ Re-running with the same `--id` replaces that block; a new `--id` adds another. 
 ## Reference files
 - `references/tooling.md` — install matrix, full `freeze`/`vhs` flag and tape reference, macOS vs Windows style presets, cross-platform notes.
 - `references/security.md` — threat model, what each script does, redaction patterns, command-guard rationale, supply-chain notes.
-- `scripts/preflight.py` · `scripts/guard.py` · `scripts/redact.py` · `scripts/embed.py` — pure Python stdlib, no network, auditable. Run with `--help`.
+- `scripts/preflight.py` · `scripts/guard.py` · `scripts/capture.py` · `scripts/redact.py` · `scripts/rasterize.py` · `scripts/embed.py` — pure Python stdlib, no network, auditable. Run with `--help`.
 - `assets/demo.tape.template` — ready-to-edit VHS tape for an animated GIF.

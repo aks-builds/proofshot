@@ -15,3 +15,6 @@ venv/
 Thumbs.db
 .idea/
 .vscode/
+
+# scratch capture artifacts
+.github/media/_*

@@ -27,11 +27,22 @@ INSTALL_HINTS = {
 }
 
 
+def _png_rasterizer():
+    """Name of the first local SVG->PNG renderer, or None. Reuses rasterize.py."""
+    try:
+        import rasterize  # sibling script
+        found = rasterize.find_renderer()
+        return found[0] if found else None
+    except Exception:
+        return None
+
+
 def detect():
     system = platform.system()  # 'Windows' | 'Darwin' | 'Linux'
     found = {t: bool(shutil.which(t)) for t in TOOLS}
 
     static_ok = found["freeze"]
+    png_rasterizer = _png_rasterizer()
     # vhs needs ffmpeg + ttyd; ttyd has no native Windows build.
     animated_ok = found["vhs"] and found["ffmpeg"] and found["ttyd"]
     animated_blocked_reason = None
@@ -46,6 +57,7 @@ def detect():
         "os": system,
         "tools": found,
         "static_screenshot": static_ok,
+        "png_rasterizer": png_rasterizer,  # SVG->PNG renderer name, or None (embed SVG)
         "animated_gif": animated_ok,
         "animated_blocked_reason": animated_blocked_reason,
     }
@@ -71,6 +83,10 @@ def main(argv=None) -> int:
 
     print()
     print("  static screenshot (freeze): {}".format("AVAILABLE" if info["static_screenshot"] else "needs freeze"))
+    if info["png_rasterizer"]:
+        print("  svg -> png (rasterize.py):  AVAILABLE via {}".format(info["png_rasterizer"]))
+    else:
+        print("  svg -> png (rasterize.py):  none found - embed the SVG (GitHub renders it)")
     if info["animated_gif"]:
         print("  animated gif (vhs):         AVAILABLE")
     else:

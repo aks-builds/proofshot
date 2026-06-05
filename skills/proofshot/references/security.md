@@ -10,7 +10,11 @@ gates enforced by small, auditable scripts.
 - proofshot only **reads and writes files inside the user's repo** (the captured
   image and `README.md`) and runs the command the user chose to demonstrate.
 - The only external programs it invokes are the user's own toolchain
-  (`freeze`/`vhs`) and the command being captured.
+  (`freeze`/`vhs`, and — for `rasterize.py` — a locally installed SVG renderer
+  such as a Chromium browser, `resvg`, `rsvg-convert`, `inkscape`, or `magick`,
+  always run headless against a local file) and the command being captured.
+  `capture.py` additionally runs `freeze` with stdin closed so it can't block on,
+  or read from, an inherited pipe.
 
 ## The three enforced gates
 

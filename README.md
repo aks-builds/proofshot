@@ -104,16 +104,24 @@ python skills/proofshot/scripts/preflight.py
 # 2. is the command safe to capture?
 python skills/proofshot/scripts/guard.py -- "myapp --help"
 
-# 3. capture (macOS/iOS window look) → SVG is text, so it can be redacted
-freeze --execute "myapp --help" --window --theme dracula -o .github/media/help.svg
+# 3. capture (macOS/iOS look) → wraps freeze: closes stdin, writes redactable SVG
+python skills/proofshot/scripts/capture.py --execute "myapp --help" \
+  --window --theme dracula -o .github/media/help.svg
 
-# 4. strip any secrets before committing
+# 4. strip any secrets before committing (always redact before rasterizing)
 python skills/proofshot/scripts/redact.py .github/media/help.svg --in-place
 
-# 5. embed idempotently (prints a diff; writes a .bak)
+# 5. (optional) rasterize the redacted SVG to PNG — SVG also embeds fine on GitHub
+python skills/proofshot/scripts/rasterize.py .github/media/help.svg
+
+# 6. embed idempotently (prints a diff; writes a .bak)
 python skills/proofshot/scripts/embed.py README.md \
   --image .github/media/help.svg --alt "myapp --help" --id help --heading Demo
 ```
+
+> `capture.py` exists because raw `freeze` **hangs** on an inherited stdin pipe
+> (any agent/CI shell) and its PNG rasterizer can **crash** on Windows.
+> `capture.py` closes stdin and captures SVG; `rasterize.py` makes the PNG.
 
 `embed.py` maintains a keyed, marker-delimited block, so re-running with the
 same `--id` updates the image in place instead of appending a duplicate:
@@ -147,7 +155,7 @@ proofshot/
 ├── skills/proofshot/
 │   ├── SKILL.md             the skill (rules, workflow, gates)
 │   ├── references/          tooling.md · security.md
-│   ├── scripts/             preflight · guard · redact · embed (pure stdlib)
+│   ├── scripts/             preflight · guard · capture · redact · rasterize · embed (pure stdlib)
 │   └── assets/              demo.tape.template (VHS)
 ├── tests/                   pytest: manifest validation + script tests
 └── .github/                 CI · CodeQL · Dependabot · templates · media

@@ -100,13 +100,16 @@ def main(argv=None) -> int:
     if args.path == "-":
         text = sys.stdin.read()
     else:
-        with open(args.path, "r", encoding="utf-8", errors="replace") as fh:
+        # utf-8-sig strips a leading BOM if present (a no-op otherwise); we write
+        # back plain utf-8, so a BOM'd input is cleaned, never re-emitted.
+        with open(args.path, "r", encoding="utf-8-sig", errors="replace") as fh:
             text = fh.read()
 
     redacted, findings = redact(text)
 
     if args.in_place and args.path != "-":
-        with open(args.path, "w", encoding="utf-8") as fh:
+        # newline="\n": write LF on every platform (no Windows CRLF translation).
+        with open(args.path, "w", encoding="utf-8", newline="\n") as fh:
             fh.write(redacted)
     else:
         sys.stdout.write(redacted)

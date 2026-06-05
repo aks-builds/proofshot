@@ -82,7 +82,9 @@ def main(argv=None) -> int:
     args = p.parse_args(argv)
 
     if os.path.exists(args.readme):
-        with open(args.readme, "r", encoding="utf-8") as fh:
+        # utf-8-sig drops a stray BOM (Notepad/VS Code can add one); we write back
+        # plain utf-8 so the README stays BOM-free and frontmatter/markdown parse.
+        with open(args.readme, "r", encoding="utf-8-sig") as fh:
             original = fh.read()
     else:
         original = "# {}\n".format(os.path.splitext(os.path.basename(args.readme))[0])
@@ -104,11 +106,13 @@ def main(argv=None) -> int:
         print("\nembed: dry-run, nothing written.", file=sys.stderr)
         return 0
 
+    # newline="\n": deterministic LF output on every platform (no Windows CRLF
+    # translation), matching the repo norm and what freeze/GitHub expect.
     if not args.no_backup and os.path.exists(args.readme):
-        with open(args.readme + ".bak", "w", encoding="utf-8") as fh:
+        with open(args.readme + ".bak", "w", encoding="utf-8", newline="\n") as fh:
             fh.write(original)
 
-    with open(args.readme, "w", encoding="utf-8") as fh:
+    with open(args.readme, "w", encoding="utf-8", newline="\n") as fh:
         fh.write(updated)
     print("\nembed: wrote {}".format(args.readme), file=sys.stderr)
     return 0

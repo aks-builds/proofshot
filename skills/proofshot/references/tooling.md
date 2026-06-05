@@ -10,7 +10,7 @@ Pinned versions (bump deliberately, test, then update here):
 
 ## `freeze` — static terminal screenshots (default)
 
-Single self-contained Go binary. Works natively on Windows, macOS, Linux. Emits SVG or rasterizes to PNG/WebP. No external runtime dependencies.
+Single self-contained Go binary that runs on Windows, macOS, and Linux. It emits **SVG** natively and can *also* rasterize to PNG/WebP — but its PNG/WebP path uses a bundled wasm rasterizer that **can crash on some Windows machines**, and `freeze` **hangs** when launched with an inherited (non-tty) stdin, which is exactly what an agent/CI shell provides. proofshot therefore drives `freeze` through `scripts/capture.py`, which closes stdin and captures to SVG; PNG is produced afterwards by `scripts/rasterize.py`. See **Reliability** below.
 
 ### Install
 | Method | Command |
@@ -22,8 +22,11 @@ Single self-contained Go binary. Works natively on Windows, macOS, Linux. Emits 
 | Release binary | https://github.com/charmbracelet/freeze/releases |
 
 ### Two modes
-- **Capture a command's output** (what proofshot uses): `freeze --execute "ls -la" -o out.png`
-- **Capture a file** (syntax-highlighted code): `freeze main.go -o code.png`
+- **Capture a command's output** (what proofshot uses): `freeze --execute "ls -la" -o out.svg`
+- **Capture a file** (syntax-highlighted code): `freeze main.go -o code.svg`
+
+> Run captures through `capture.py` rather than calling `freeze` directly — it
+> applies the stdin/SVG/encoding fixes for you (see **Reliability**).
 
 ### Key flags
 | Flag | Purpose |
@@ -44,31 +47,63 @@ Single self-contained Go binary. Works natively on Windows, macOS, Linux. Emits 
 
 ### Style presets
 
+These flags pass straight through `capture.py` (which writes `.svg`); the same
+flags also work on raw `freeze` if you add the stdin redirect from **Reliability**.
+
 **macOS / iOS look** (rounded, traffic lights, soft shadow):
 ```bash
-freeze --execute "<cmd>" --window --theme dracula \
+python scripts/capture.py --execute "<cmd>" --window --theme dracula \
   --background "#0d1117" --padding 24 --margin 20 \
   --border.radius 8 --shadow.blur 24 --shadow.y 12 \
   --font.family "JetBrains Mono" --font.size 14 \
-  -o .github/media/<name>.png
+  -o .github/media/<name>.svg
 ```
 
 **Windows-terminal look** (square, flat, no traffic lights):
 ```bash
-freeze --execute "<cmd>" --theme github \
+python scripts/capture.py --execute "<cmd>" --theme github \
   --background "#0c0c0c" --padding 20 --margin 12 \
   --border.radius 0 --border.width 1 --border.color "#3a3a3a" \
   --font.family "Cascadia Code" --font.size 14 \
-  -o .github/media/<name>.png
+  -o .github/media/<name>.svg
 ```
 
-### SVG-first capture (recommended for redaction)
-SVG is text, so it can be scanned by `redact.py`. Capture to `.svg`, redact, then (optionally) rasterize:
+### SVG-first capture (the proofshot pipeline)
+SVG is text, so it can be scanned by `redact.py`, it renders on GitHub as-is, and
+it sidesteps the PNG rasterizer entirely. Capture → redact → (optionally) rasterize:
 ```bash
-freeze --execute "<cmd>" --window -o .github/media/<name>.svg
-python ../scripts/redact.py .github/media/<name>.svg --in-place
-# optional rasterize: freeze re-run to png, or any svg->png converter
+# 1. capture: wraps freeze with stdin closed + --language ansi; always writes SVG.
+#    All freeze style flags pass straight through.
+python scripts/capture.py --execute "<cmd>" --window --theme dracula \
+  --background "#0d1117" --padding 24 --margin 20 --border.radius 8 \
+  --font.family "JetBrains Mono" --font.size 14 \
+  -o .github/media/<name>.svg
+
+# 2. redact BEFORE rasterizing, so the PNG reflects the redactions.
+python scripts/redact.py .github/media/<name>.svg --in-place
+
+# 3. optional: rasterize the redacted SVG to PNG (retina by default).
+python scripts/rasterize.py .github/media/<name>.svg -o .github/media/<name>.png
 ```
+Embed the `.svg` directly (GitHub renders it) or the `.png` from step 3.
+
+### Reliability (non-interactive shells, Windows)
+These are real failure modes of `freeze` v0.2.2 that `capture.py`/`rasterize.py`
+handle. If you must call `freeze` by hand, apply them yourself:
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `freeze` **hangs forever**, no output | It blocks probing an inherited non-tty stdin (agent/CI shells) | Close stdin: `freeze … < /dev/null` (POSIX) or `cmd /c "freeze … < NUL"` (Windows). `capture.py` does this via `subprocess.DEVNULL`. |
+| PNG/WebP output **crashes** (Go `0xc0000005` / panic) | Bundled wasm rasterizer faults on some Windows setups | Output `.svg`, then `rasterize.py` (browser/resvg/rsvg/inkscape/magick). |
+| `--execute` errors **"Language Unknown"** | No lexer chosen for the captured output | Add `--language ansi`. `capture.py` injects it for `--execute`. |
+| Text shows `Â`/`â€"` mojibake | SVG re-read with the wrong encoding (e.g. PowerShell `Get-Content` defaults to cp1252) | Read/write UTF-8 explicitly, or let the renderer load the `.svg` file directly (what `rasterize.py` does). |
+| Stray glyph / broken parse from a **UTF-8 BOM** at the start of a file | A BOM'd input (Notepad/VS Code) is read as a literal `﻿` and re-emitted | Read with `utf-8-sig` (strips a BOM), write plain `utf-8` (never adds one). `capture.py`/`redact.py`/`embed.py`/`rasterize.py` all do this; `capture.py` also strips a BOM from freeze's output defensively. |
+
+### `rasterize.py` — SVG → PNG renderers
+Tries, in order: a Chromium-family browser (Chrome/Edge/Chromium — best fidelity
+for `freeze`'s embedded web font), then `resvg`, `rsvg-convert`, `inkscape`,
+`magick`. Force one with `--renderer chrome|resvg|…`; set density with `--scale`
+(default `2` = retina). If none is installed, just embed the SVG.
 
 ### Windows command-wrapping
 - Plain executables work directly: `--execute "myapp --help"`.

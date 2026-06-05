@@ -35,6 +35,28 @@ def test_appends_heading_when_absent():
     assert "proofshot:start id=z" in out
 
 
+def test_bom_readme_rewritten_without_bom(tmp_path):
+    readme = tmp_path / "README.md"
+    readme.write_bytes("﻿# Title\n\n## Demo\n".encode("utf-8"))
+    rc = embed.main([str(readme), "--image", "a.png", "--alt", "a", "--id", "a",
+                     "--heading", "Demo", "--no-backup"])
+    assert rc == 0
+    data = readme.read_bytes()
+    assert data[:3] != b"\xef\xbb\xbf"
+    assert data.startswith(b"# Title")
+    assert b"proofshot:start id=a" in data
+
+
+def test_output_is_lf_not_crlf(tmp_path):
+    readme = tmp_path / "README.md"
+    readme.write_bytes(b"# Title\n\nIntro line.\n\n## Demo\n")
+    embed.main([str(readme), "--image", "a.png", "--alt", "a", "--id", "a",
+                "--heading", "Demo", "--no-backup"])
+    data = readme.read_bytes()
+    assert b"\r\n" not in data          # no Windows CRLF translation slipped in
+    assert b"proofshot:start id=a" in data
+
+
 def test_windows_path_normalised_to_forward_slashes():
     out = embed.upsert("# T\n", r".github\media\a.png", "a", "a", "Demo")
     assert ".github/media/a.png" in out

@@ -52,6 +52,24 @@ def test_clean_text_unchanged():
     assert findings == []
 
 
+def test_bom_input_is_stripped_not_preserved(tmp_path):
+    f = tmp_path / "bom.svg"
+    # UTF-8 BOM + clean content
+    f.write_bytes(b"\xef\xbb\xbf<svg>All 42 tests passed</svg>")
+    assert redact.main([str(f), "--in-place"]) == 0
+    data = f.read_bytes()
+    assert data[:3] != b"\xef\xbb\xbf"          # BOM removed on rewrite
+    assert data.startswith(b"<svg>")            # starts at markup
+    assert "﻿" not in f.read_text(encoding="utf-8")
+
+
+def test_inplace_writes_lf_not_crlf(tmp_path):
+    f = tmp_path / "multi.txt"
+    f.write_bytes(b"line one\nline two\nall clean\n")
+    assert redact.main([str(f), "--in-place"]) == 0
+    assert b"\r\n" not in f.read_bytes()
+
+
 def test_exit_codes(tmp_path, capsys):
     secret = tmp_path / "s.txt"
     secret.write_text("AKIAIOSFODNN7EXAMPLE", encoding="utf-8")

@@ -18,6 +18,15 @@ on:
   pull_request:
     types: [opened, ready_for_review, synchronize, reopened]
 
+# Required: a called workflow can never be granted more token scope than its
+# caller. The reusable workflow requests `pull-requests: write` to post the
+# approval, so the caller must grant it here. Without this block the caller
+# inherits the repo's read-only default and the run dies at startup with
+# "requesting 'pull-requests: write', but is only allowed 'pull-requests: none'".
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   call:
     uses: aks-builds/workflows/.github/workflows/auto-approve.yml@main

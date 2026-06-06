@@ -10,8 +10,8 @@ permissions:
   contents: read
 
 jobs:
-  test:
-    name: test
+  test-matrix:
+    name: test-matrix
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -40,6 +40,23 @@ jobs:
           python skills/cliproof/scripts/preflight.py --json
           python skills/cliproof/scripts/guard.py -- "echo hello"
           echo "AKIAIOSFODNN7EXAMPLE" | python skills/cliproof/scripts/redact.py - || test $? -eq 3
+
+  # Stable aggregate gate. The matrix above produces per-version checks
+  # ("test-matrix (3.10)", ...) whose names change as versions are added or
+  # dropped; this single, fixed "test" check is what branch rules require, so
+  # the required context never has to track the matrix.
+  test:
+    name: test
+    needs: [test-matrix]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require all matrix jobs to succeed
+        run: |
+          if [ "${{ needs.test-matrix.result }}" != "success" ]; then
+            echo "test-matrix result: ${{ needs.test-matrix.result }}"
+            exit 1
+          fi
 
   cli:
     name: cli

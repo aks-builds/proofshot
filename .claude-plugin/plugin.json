@@ -1,6 +1,6 @@
 {
   "name": "cliproof",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Prove your CLI actually works. Captures a real terminal command and its real output as a polished screenshot (or GIF) and embeds it into your README as proof-it-runs evidence.",
   "author": {
     "name": "aks-builds",

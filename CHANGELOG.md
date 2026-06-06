@@ -6,6 +6,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-06-06
+
 ### Changed
 - **Renamed the project `proofshot` → `cliproof`.** The previous name collided
   with an established npm package and GitHub repo (`AmElmo/proofshot`) that also

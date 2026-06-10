@@ -167,6 +167,16 @@ function main() {
   if (cmd === "install") return cmdInstall(argv.slice(1));
   if (cmd === "doctor") return cmdDoctor();
   if (cmd === "themes") return cmdThemes(argv.slice(1));
+  if (cmd === "mcp") {
+    const py = findPython();
+    if (!py) { console.error("cliproof: Python 3.8+ not found on PATH."); return 1; }
+    return runPython(py, "mcp_server", argv.slice(1));
+  }
+  if (cmd === "serve") {
+    const py = findPython();
+    if (!py) { console.error("cliproof: Python 3.8+ not found on PATH."); return 1; }
+    return runPython(py, "serve", argv.slice(1));
+  }
   if (PASSTHROUGH.includes(cmd)) {
     const py = findPython();
     if (!py) { console.error("cliproof: Python 3.8+ not found on PATH (needed for this command)."); return 1; }

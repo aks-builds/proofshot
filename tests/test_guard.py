@@ -31,4 +31,37 @@ def test_credential_read_blocked():
 
 def test_main_exit_codes(capsys):
     assert guard.main(["--", "echo hi"]) == 0
-    assert guard.main(["--", "rm -rf /"]) == 2
+    assert guard.main(["--", "rm -rf /"]) == 5
+
+
+import json
+import _kernel
+
+
+def test_safe_command_exits_0_with_json(capsys):
+    rc = guard.main(["--json", "echo hello"])
+    assert rc == 0
+    out = json.loads(capsys.readouterr().out)
+    assert out["ok"] is True
+    assert out["step"] == "guard"
+    assert out["outputs"] == {"safe": True}
+
+
+def test_unsafe_command_exits_5_with_json(capsys):
+    rc = guard.main(["--json", "rm -rf /"])
+    assert rc == _kernel.EXIT_UNSAFE
+    out = json.loads(capsys.readouterr().out)
+    assert out["ok"] is False
+    assert out["step"] == "guard"
+    assert out["reason"] == "unsafe"
+    assert out["exit_code"] == _kernel.EXIT_UNSAFE
+
+
+def test_unsafe_command_exits_5_without_json(capsys):
+    rc = guard.main(["rm -rf /"])
+    assert rc == _kernel.EXIT_UNSAFE
+
+
+def test_safe_command_exits_0_without_json():
+    rc = guard.main(["echo hello"])
+    assert rc == 0

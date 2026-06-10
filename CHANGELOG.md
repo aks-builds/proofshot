@@ -6,6 +6,25 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-06-10
+
+### Added
+- JSON contract kernel: `--json` flag on all 13 scripts emits structured `{ ok, step, outputs, ... }` to stdout
+- `--timeout` flag on all scripts; hard timeouts with exit code 4 — no hangs ever
+- Stable exit code contract: 0 success, 3 secret, 4 timeout, 5 unsafe, 6 drift
+- Multi-renderer fallback chain in `capture.py`: freeze (tier 1) → silicon (tier 2) → text-SVG stub (tier 4)
+- `health.py` — first-class health probe; `preflight.py` kept as deprecation alias
+- 6 new themes: catppuccin, tokyo-night, one-dark, dracula, solarized, rose-pine
+- `annotate.py`: `--badge pass/fail`, `--stamp`, `--ci-ribbon` SVG overlay layers
+- `check.py`: `gif` block support in proof.json (speed, loop, freeze_last, max_kb)
+- `bin/cli.js`: `themes list` subcommand, `health` passthrough
+
+### Changed
+- README tagline: "Your README should show it works — not just say it."
+- README: broader hero copy, "Who it's for" section, updated install heading
+- `guard.py` exit code for unsafe: 5 (was 2; 2 is now reserved for unknown command)
+- `check.py` exit code for drift: 6 (was 1)
+
 ### Changed
 - **Renamed the project `proofshot` → `cliproof`.** The previous name collided
   with an established npm package and GitHub repo (`AmElmo/proofshot`) that also

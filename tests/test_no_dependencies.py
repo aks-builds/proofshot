@@ -13,6 +13,8 @@ SCRIPTS_DIR = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
     "skills", "cliproof", "scripts",
 )
+# serve.py is the HTTP daemon itself — it intentionally uses http.server.
+_DAEMON_SCRIPTS = {"serve.py"}
 SCRIPTS = [f for f in os.listdir(SCRIPTS_DIR) if f.endswith(".py")]
 SIBLINGS = {f[:-3] for f in SCRIPTS}  # scripts may import each other (e.g. check -> normalize)
 
@@ -47,6 +49,8 @@ def test_only_stdlib_and_siblings(script):
 
 @pytest.mark.parametrize("script", SCRIPTS)
 def test_no_network_modules(script):
+    if script in _DAEMON_SCRIPTS:
+        pytest.skip("{} is the HTTP daemon — http.server is intentional".format(script))
     roots = _top_level_imports(os.path.join(SCRIPTS_DIR, script))
     leaked = roots & FORBIDDEN
     assert not leaked, f"{script} imports network module(s): {leaked}"

@@ -38,9 +38,7 @@ import subprocess
 import sys
 
 # Kernel helpers — same directory as this script.
-import os as _os_k
-import sys as _sys_k
-_sys_k.path.insert(0, _os_k.path.dirname(_os_k.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _kernel import EXIT_SUCCESS, EXIT_ERROR, EXIT_TIMEOUT, success, error, emit, default_timeout, setup_streams
 
 # Status/diagnostic text can contain any Unicode; never crash on a cp1252 console.
@@ -276,13 +274,13 @@ def main(argv=None) -> int:
             try:
                 timeout_s = float(argv[i + 1])
             except ValueError:
-                pass
+                timeout_s = default_timeout("capture")  # non-numeric value; keep default
             i += 2
         elif argv[i].startswith("--timeout="):
             try:
                 timeout_s = float(argv[i].split("=", 1)[1])
             except ValueError:
-                pass
+                timeout_s = default_timeout("capture")  # non-numeric value; keep default
             i += 1
         else:
             new_argv.append(argv[i])
@@ -298,13 +296,13 @@ def main(argv=None) -> int:
             try:
                 scale = int(argv[i + 1])
             except ValueError:
-                pass
+                scale = 1  # non-integer value; keep default
             i += 2
         elif argv[i].startswith("--scale="):
             try:
                 scale = int(argv[i].split("=", 1)[1])
             except ValueError:
-                pass
+                scale = 1  # non-integer value; keep default
             i += 1
         else:
             new_argv.append(argv[i])
@@ -445,7 +443,7 @@ def main(argv=None) -> int:
                     print(svg_path)
                 return EXIT_SUCCESS
         except Exception:
-            pass
+            print("capture: silicon tier-2 failed; falling through to tier 4.", file=sys.stderr)
 
     # Tier 4: text-SVG stub — always succeeds
     print("capture: no styled renderer found; generating text-SVG stub (tier 4).", file=sys.stderr)

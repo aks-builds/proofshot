@@ -17,11 +17,10 @@ Exit codes:
 Pure standard library. No network. No side effects.
 """
 import argparse
+import os
 import re
 import sys
-import os as _os_k
-import sys as _sys_k
-_sys_k.path.insert(0, _os_k.path.dirname(_os_k.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _kernel import EXIT_UNSAFE, EXIT_SUCCESS, success, error, emit  # noqa: E402
 
 # (name, compiled regex, human explanation). Patterns are intentionally broad;

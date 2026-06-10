@@ -19,11 +19,8 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-for _s in (sys.stdout, sys.stderr):
-    try:
-        _s.reconfigure(encoding="utf-8", errors="replace")
-    except (AttributeError, ValueError):
-        pass
+from _kernel import setup_streams  # noqa: E402 — same directory
+setup_streams()
 
 _SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))
 def _read_version():
@@ -358,7 +355,7 @@ def main(argv=None):
             print("mcp_server: renderers: {}".format(", ".join(info.get("renderers", []))),
                   file=sys.stderr)
     except Exception:
-        pass
+        _ = None  # health probe optional; MCP server still starts
 
     while True:
         try:

@@ -23,9 +23,7 @@ import re
 import shutil
 import subprocess
 import sys
-import os as _os_kk
-import sys as _sys_kk
-_sys_kk.path.insert(0, _os_kk.path.dirname(_os_kk.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _kernel import setup_streams  # noqa: E402
 
 setup_streams()

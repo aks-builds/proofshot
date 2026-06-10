@@ -35,11 +35,8 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-for _s in (sys.stdout, sys.stderr):
-    try:
-        _s.reconfigure(encoding="utf-8", errors="replace")
-    except (AttributeError, ValueError):
-        pass
+from _kernel import setup_streams  # noqa: E402 — same directory
+setup_streams()
 
 _SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))
 

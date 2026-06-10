@@ -11,13 +11,11 @@ Usage:
 Pure standard library. No network.
 """
 import argparse
+import os
 import re
 import sys
 
-sys.path.insert(0, __file__.rsplit("/", 1)[0] if "/" in __file__ else ".")
-import os as _os_k
-_sys_k = sys
-_sys_k.path.insert(0, _os_k.path.dirname(_os_k.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _kernel import EXIT_SUCCESS, EXIT_ERROR, success, error, emit, setup_streams  # noqa: E402
 
 setup_streams()

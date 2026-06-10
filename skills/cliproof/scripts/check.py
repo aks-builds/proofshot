@@ -39,9 +39,6 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import normalize  # noqa: E402
 
-import os as _os_k
-import sys as _sys_k
-_sys_k.path.insert(0, _os_k.path.dirname(_os_k.path.abspath(__file__)))
 from _kernel import EXIT_DRIFT, EXIT_SUCCESS, EXIT_ERROR, success, error, emit, default_timeout, setup_streams
 
 setup_streams()

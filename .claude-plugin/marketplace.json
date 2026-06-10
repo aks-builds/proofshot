@@ -7,14 +7,14 @@
   },
   "metadata": {
     "description": "Proof-it-runs terminal evidence for your repos — by aks-builds.",
-    "version": "0.1.1"
+    "version": "0.3.0"
   },
   "plugins": [
     {
       "name": "cliproof",
       "source": "./",
       "description": "Capture a real terminal command and its real output as a polished screenshot or GIF, then embed it into README.md as proof the software works. Static screenshots via Charm `freeze`; animated demos via `vhs`. Enforced secret redaction, command-safety guard, and idempotent README inserts.",
-      "version": "0.1.1",
+      "version": "0.3.0",
       "license": "MIT",
       "keywords": [
         "terminal",

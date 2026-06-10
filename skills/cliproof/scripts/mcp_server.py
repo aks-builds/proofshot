@@ -26,7 +26,15 @@ for _s in (sys.stdout, sys.stderr):
         pass
 
 _SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))
-_VERSION = "0.2.0"
+def _read_version():
+    try:
+        _pkg = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "package.json"))
+        with open(_pkg, encoding="utf-8") as _f:
+            return json.load(_f).get("version", "0.3.0")
+    except Exception:
+        return "0.3.0"
+
+_VERSION = _read_version()
 _PROTOCOL = "2024-11-05"
 
 TOOLS = [

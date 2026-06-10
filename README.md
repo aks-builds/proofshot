@@ -91,6 +91,36 @@ npm install -g cliproof
 cliproof install        # detects Claude Code, Cursor, Codex, OpenCode, Gemini, Windsurf
 ```
 
+**MCP server (Claude Code, Cursor, Windsurf, LangChain — any MCP-compatible agent):**
+```json
+// .mcp.json
+{ "mcpServers": { "cliproof": { "command": "cliproof", "args": ["mcp"] } } }
+```
+
+**Python library:**
+```bash
+pip install cliproof
+```
+```python
+from cliproof import capture, redact, embed
+result = capture("pytest -q", preset="catppuccin")
+redact(result.image, in_place=True)
+embed("README.md", image=result.image, block_id="tests")
+```
+
+**Docker (any CI — GitHub Actions, GitLab CI, Jenkins, CircleCI):**
+```yaml
+- docker run --rm -v $PWD:/repo \
+    ghcr.io/aks-builds/cliproof:latest \
+    capture --execute "pytest -q" -o /repo/.github/media/tests.svg --json
+```
+
+**Local HTTP daemon (IDE extensions, polyglot callers):**
+```bash
+cliproof serve            # starts on localhost:7070
+curl localhost:7070/health
+```
+
 **Claude Code plugin:**
 ```bash
 /plugin marketplace add aks-builds/cliproof

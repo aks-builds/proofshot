@@ -6,6 +6,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-06-10
+
+### Added
+- MCP server (`cliproof mcp`): stdio JSON-RPC 2.0 server exposing 11 cliproof tools — any MCP-compatible agent (Claude Code, Cursor, Windsurf, LangChain, CrewAI, AutoGen) can call cliproof natively
+- Python library (`pip install cliproof`): `capture()`, `redact()`, `embed()`, `check()`, `health()`, `guard()` with typed return objects and exceptions
+- Docker image (`ghcr.io/aks-builds/cliproof`): Alpine + Python 3.12 + freeze@0.2.2 + gifsicle, health gate at container start, multi-arch amd64/arm64
+- HTTP daemon (`cliproof serve`): stdlib REST API on localhost:7070 for IDE extensions and polyglot callers
+- `.mcp.json` example for one-line Claude Code / Cursor wiring
+
 ## [0.2.0] - 2026-06-10
 
 ### Added

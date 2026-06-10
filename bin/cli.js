@@ -25,7 +25,7 @@ const SCRIPTS = path.join(SKILL_DIR, "scripts");
 const VERSION = require(path.join(ROOT, "package.json")).version;
 
 const PASSTHROUGH = ["preflight", "guard", "capture", "redact", "embed",
-  "check", "suggest", "verify", "storyboard", "annotate", "pr"];
+  "check", "suggest", "verify", "storyboard", "annotate", "pr", "health"];
 
 const HOME = os.homedir();
 // name -> how to install. kind 'dir' copies the skill folder; 'file' writes
@@ -139,6 +139,26 @@ Examples:
 `);
 }
 
+function cmdThemes(argv) {
+  const sub = argv[0];
+  if (!sub || sub === "list") {
+    const builtin = ["macos", "github-dark", "nord", "iterm", "win11"];
+    const themesDir = path.join(ROOT, "skills", "cliproof", "themes");
+    let fileBased = [];
+    try {
+      fileBased = fs.readdirSync(themesDir)
+        .filter(f => f.endsWith(".json"))
+        .map(f => f.replace(".json", ""));
+    } catch (_) {}
+    const all = [...new Set([...builtin, ...fileBased])].sort();
+    console.log("Available themes (" + all.length + "):");
+    all.forEach(t => console.log("  " + t));
+    return 0;
+  }
+  console.error("cliproof themes: unknown subcommand '" + sub + "'. Try: list");
+  return 2;
+}
+
 function main() {
   const argv = process.argv.slice(2);
   const cmd = argv[0];
@@ -146,6 +166,7 @@ function main() {
   if (cmd === "-v" || cmd === "--version") { console.log(VERSION); return 0; }
   if (cmd === "install") return cmdInstall(argv.slice(1));
   if (cmd === "doctor") return cmdDoctor();
+  if (cmd === "themes") return cmdThemes(argv.slice(1));
   if (PASSTHROUGH.includes(cmd)) {
     const py = findPython();
     if (!py) { console.error("cliproof: Python 3.8+ not found on PATH (needed for this command)."); return 1; }

@@ -13,7 +13,7 @@ from cliproof._types import (
     CliproofError, RedactionBlockedError, CliproofNotReadyError,
 )
 
-_lazy_health = False
+_config = {"lazy_health": False}
 
 
 def configure(lazy_health=False):
@@ -22,8 +22,7 @@ def configure(lazy_health=False):
     Args:
         lazy_health: If True, skip the health check on import (default False).
     """
-    global _lazy_health
-    _lazy_health = lazy_health
+    _config["lazy_health"] = lazy_health
 
 
 __all__ = [

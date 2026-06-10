@@ -12,9 +12,6 @@ from cliproof._types import (
 )
 
 _EXIT_SECRET = 3
-_EXIT_TIMEOUT = 4
-_EXIT_UNSAFE = 5
-_EXIT_DRIFT = 6
 
 
 def _run(script_name, args, timeout=60):

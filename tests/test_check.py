@@ -41,7 +41,6 @@ def test_check_one_detects_drift(tmp_path):
     assert check._check_one(entry, update=False) is False
 
 
-import json
 import _kernel
 
 

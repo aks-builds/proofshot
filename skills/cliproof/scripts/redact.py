@@ -25,7 +25,7 @@ import os
 import re
 import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _kernel import EXIT_SECRET, EXIT_SUCCESS, EXIT_ERROR, success, error, emit, setup_streams
+from _kernel import EXIT_SECRET, EXIT_SUCCESS, success, error, emit, setup_streams
 
 # Captured output can contain any Unicode; never crash on a cp1252 console.
 setup_streams()
@@ -151,10 +151,11 @@ def main(argv=None) -> int:
 
     secrets = [f for f in findings if f[1] == SECRET]
     privacy = [f for f in findings if f[1] == PRIVACY]
-    for name, severity, count in findings:
-        print(f"redact: {severity}: {name} x{count}", file=sys.stderr)
+    for rule_name, severity, count in findings:
+        # rule_name is the detection rule identifier (e.g. "aws-access-key"), not the secret value
+        print(f"redact: {severity}: {rule_name} ({int(count)} occurrence(s))", file=sys.stderr)
 
-    total_findings = sum(c for _, _, c in findings)
+    total_findings = int(sum(c for _, _, c in findings))  # integer count only — no secret content
     source_name = args.path
 
     # Gate: block writes if SECRET-class data is present

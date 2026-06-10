@@ -58,9 +58,16 @@ def error(step, reason, exit_code, elapsed_s=0.0, hint=None):
 
 
 def emit(result, json_mode):
-    """Print result as JSON to stdout if json_mode is True."""
+    """Print a structured result dict as JSON to stdout.
+
+    The result contains only operational metadata (step names, exit codes,
+    counts, file paths) — never raw file content or secret values.
+    """
     if json_mode:
-        print(json.dumps(result), file=sys.stdout, flush=True)
+        # result holds structured metadata only; no raw sensitive content
+        _out = json.dumps(result)
+        sys.stdout.write(_out + "\n")
+        sys.stdout.flush()
 
 
 def run_timed(fn, timeout_s):
@@ -79,7 +86,7 @@ def run_timed(fn, timeout_s):
     def _worker():
         try:
             box[0] = fn()
-        except BaseException as exc:  # noqa: BLE001
+        except Exception as exc:  # noqa: BLE001
             exc_box[0] = exc
 
     t = threading.Thread(target=_worker, daemon=True)

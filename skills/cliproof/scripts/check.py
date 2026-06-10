@@ -39,7 +39,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import normalize  # noqa: E402
 
-from _kernel import EXIT_DRIFT, EXIT_SUCCESS, EXIT_ERROR, success, error, emit, default_timeout, setup_streams
+from _kernel import EXIT_DRIFT, EXIT_SUCCESS, success, error, emit, default_timeout, setup_streams
 
 setup_streams()
 

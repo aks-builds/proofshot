@@ -1,6 +1,5 @@
 """_dispatch.py — locate the cliproof scripts directory at runtime."""
 import os
-import sys
 
 
 def scripts_dir():

@@ -372,6 +372,7 @@ def main(argv=None):
         resp = _handle_request(msg)
         if resp is not None:
             _write_message(resp)
+    return 0
 
 
 if __name__ == "__main__":

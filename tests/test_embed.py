@@ -1,6 +1,5 @@
 import json
 import embed
-import _kernel
 
 
 def test_creates_block_under_heading():

@@ -30,7 +30,6 @@ import json
 import os
 import subprocess
 import sys
-import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -40,9 +39,16 @@ setup_streams()
 
 _SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))
 
+_ALLOWED_SCRIPTS = frozenset([
+    "capture", "redact", "embed", "check", "guard", "verify",
+    "suggest", "annotate", "storyboard", "pr", "health",
+])
+
 
 def _run_script(name, args, timeout=120):
     """Call a cliproof script with --json and return parsed result dict."""
+    if name not in _ALLOWED_SCRIPTS:
+        return {"ok": False, "error": "unknown operation", "step": name}
     script = os.path.join(_SCRIPTS_DIR, name + ".py")
     cmd = [sys.executable, script] + list(args) + ["--json"]
     proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
@@ -120,6 +126,11 @@ class _Handler(BaseHTTPRequestHandler):
         if path == "/capture":
             if "command" not in body or "output" not in body:
                 raise _BadRequest("capture requires 'command' and 'output'")
+            # Security gate: validate command is safe before running it
+            guard_check = _run_script("guard", [body["command"]])
+            if not guard_check.get("ok"):
+                raise _BadRequest("command rejected by safety guard: {}".format(
+                    guard_check.get("reason", "unsafe")))
             args = ["--execute", body["command"], "-o", body["output"]]
             if body.get("preset"):
                 args += ["--preset", body["preset"]]
@@ -174,6 +185,9 @@ class _Handler(BaseHTTPRequestHandler):
         if path == "/verify":
             if "command" not in body:
                 raise _BadRequest("verify requires 'command'")
+            guard_check = _run_script("guard", [body["command"]])
+            if not guard_check.get("ok"):
+                raise _BadRequest("command rejected by safety guard")
             args = ["--command", body["command"]]
             if body.get("timeout"):
                 args += ["--timeout", str(body["timeout"])]

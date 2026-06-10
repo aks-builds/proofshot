@@ -9,7 +9,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import cliproof
 from cliproof._types import (
     CaptureResult, RedactResult, EmbedResult, CheckResult,
-    CliproofNotReadyError, RedactionBlockedError, CliproofError
+    RedactionBlockedError, CliproofError
 )
 from cliproof._dispatch import scripts_dir
 

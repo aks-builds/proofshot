@@ -1,6 +1,5 @@
 import json
 import health
-import _kernel
 
 
 def test_health_detect_returns_required_keys(monkeypatch):

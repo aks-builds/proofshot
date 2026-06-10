@@ -29,13 +29,11 @@ import difflib
 import os
 import re
 import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _kernel import EXIT_SUCCESS, EXIT_ERROR, success, error, emit, setup_streams
 
 # README/diff text can contain any Unicode; never crash on a cp1252 console.
-for _stream in (sys.stdout, sys.stderr):
-    try:
-        _stream.reconfigure(encoding="utf-8", errors="replace")
-    except (AttributeError, ValueError):
-        pass
+setup_streams()
 
 
 def _block(image: str, alt: str, block_id: str) -> str:
@@ -79,6 +77,7 @@ def main(argv=None) -> int:
     p.add_argument("--heading", default="Demo", help="section heading to place a new block under")
     p.add_argument("--dry-run", action="store_true", help="print the diff but do not write")
     p.add_argument("--no-backup", action="store_true", help="do not write a .bak file")
+    p.add_argument("--json", action="store_true", help="emit machine-readable JSON to stdout")
     args = p.parse_args(argv)
 
     if os.path.exists(args.readme):
@@ -97,14 +96,17 @@ def main(argv=None) -> int:
         fromfile=args.readme, tofile=args.readme + " (cliproof)",
     ))
     if diff:
-        sys.stdout.write(diff)
+        if not args.json:
+            sys.stdout.write(diff)
     else:
         print("embed: no change (block already up to date).", file=sys.stderr)
-        return 0
+        emit(success("embed", {"readme": args.readme, "diff": ""}), args.json)
+        return EXIT_SUCCESS
 
     if args.dry_run:
         print("\nembed: dry-run, nothing written.", file=sys.stderr)
-        return 0
+        emit(success("embed", {"readme": args.readme, "diff": diff[:500]}), args.json)
+        return EXIT_SUCCESS
 
     # newline="\n": deterministic LF output on every platform (no Windows CRLF
     # translation), matching the repo norm and what freeze/GitHub expect.
@@ -112,10 +114,16 @@ def main(argv=None) -> int:
         with open(args.readme + ".bak", "w", encoding="utf-8", newline="\n") as fh:
             fh.write(original)
 
-    with open(args.readme, "w", encoding="utf-8", newline="\n") as fh:
-        fh.write(updated)
+    try:
+        with open(args.readme, "w", encoding="utf-8", newline="\n") as fh:
+            fh.write(updated)
+    except OSError as exc:
+        print("\nembed: write failed: {}".format(exc), file=sys.stderr)
+        emit(error("embed", "write_failed", EXIT_ERROR), args.json)
+        return EXIT_ERROR
     print("\nembed: wrote {}".format(args.readme), file=sys.stderr)
-    return 0
+    emit(success("embed", {"readme": args.readme, "diff": diff[:500]}), args.json)
+    return EXIT_SUCCESS
 
 
 if __name__ == "__main__":

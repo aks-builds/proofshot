@@ -14,14 +14,13 @@ Usage:
 Pure standard library. No network.
 """
 import argparse
+import os
 import re
 import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _kernel import EXIT_SUCCESS, success, emit, setup_streams
 
-for _stream in (sys.stdout, sys.stderr):
-    try:
-        _stream.reconfigure(encoding="utf-8", errors="replace")
-    except (AttributeError, ValueError):
-        pass
+setup_streams()
 
 # Order matters: timestamps before bare times/dates; specific before general.
 _RULES = [
@@ -58,6 +57,7 @@ def main(argv=None) -> int:
     p = argparse.ArgumentParser(description="Neutralise volatile tokens for reproducible captures.")
     p.add_argument("path", help="file to normalise, or '-' for stdin")
     p.add_argument("--in-place", action="store_true", help="rewrite the file")
+    p.add_argument("--json", action="store_true", help="emit machine-readable JSON to stdout")
     args = p.parse_args(argv)
 
     if args.path == "-":
@@ -71,8 +71,10 @@ def main(argv=None) -> int:
         with open(args.path, "w", encoding="utf-8") as fh:
             fh.write(out)
     else:
-        sys.stdout.write(out)
-    return 0
+        if not args.json:
+            sys.stdout.write(out)
+    emit(success("normalize", {"normalized": True}), args.json)
+    return EXIT_SUCCESS
 
 
 if __name__ == "__main__":

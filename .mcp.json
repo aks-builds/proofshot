@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "cliproof": {
+      "command": "cliproof",
+      "args": ["mcp"]
+    }
+  }
+}

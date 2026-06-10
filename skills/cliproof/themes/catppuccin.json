@@ -1,0 +1,13 @@
+{
+  "name": "catppuccin",
+  "flags": [
+    ["--window", null],
+    ["--theme", "catppuccin-mocha"],
+    ["--background", "#1e1e2e"],
+    ["--border.radius", "10"],
+    ["--padding", "24"],
+    ["--margin", "20"],
+    ["--shadow.blur", "24"],
+    ["--shadow.y", "12"]
+  ]
+}

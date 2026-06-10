@@ -2,11 +2,11 @@ import preflight
 
 
 def test_detect_shape():
+    """preflight.detect() delegates to health.detect() — verify the new key contract."""
     info = preflight.detect()
-    assert set(info) >= {"os", "tools", "static_screenshot", "animated_gif"}
-    assert set(preflight.TOOLS) <= set(info["tools"])
-    assert isinstance(info["static_screenshot"], bool)
-    assert isinstance(info["animated_gif"], bool)
+    assert set(info) >= {"ok", "renderers", "modes", "gif", "python", "os"}
+    assert isinstance(info["ok"], bool)
+    assert isinstance(info["gif"], bool)
 
 
 def test_json_mode_runs():

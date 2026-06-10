@@ -18,15 +18,14 @@ Exit codes:
 Pure standard library. No network.
 """
 import argparse
+import os
 import re
 import subprocess
 import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _kernel import EXIT_SUCCESS, EXIT_ERROR, success, error, emit, default_timeout, setup_streams
 
-for _stream in (sys.stdout, sys.stderr):
-    try:
-        _stream.reconfigure(encoding="utf-8", errors="replace")
-    except (AttributeError, ValueError):
-        pass
+setup_streams()
 
 # (language/tool, regex). Case-insensitive unless the pattern needs case.
 _ERROR_SIGNS = [
@@ -86,17 +85,24 @@ def main(argv=None) -> int:
     p.add_argument("--command", required=True, help="command to run and judge")
     p.add_argument("--report", help="write a Markdown report to this path")
     p.add_argument("--quiet", action="store_true", help="suppress the command output echo")
+    p.add_argument("--json", action="store_true", help="emit machine-readable JSON to stdout")
+    p.add_argument("--timeout", type=float, default=default_timeout("verify"),
+                   help="timeout in seconds")
     args = p.parse_args(argv)
 
     try:
         result = verify(args.command)
     except Exception as exc:  # noqa: BLE001
         print(f"verify: command failed to run: {exc}", file=sys.stderr)
-        return 1
+        _r = error("verify", "command_failed", EXIT_ERROR)
+        _r["outputs"] = {"verdict": "FAIL", "command": args.command}
+        emit(_r, args.json)
+        return EXIT_ERROR
+
+    verdict = "PASS" if result["ok"] else "FAIL"
 
     if not args.quiet:
         sys.stdout.write(result["output"])
-    verdict = "PASS" if result["ok"] else "FAIL"
     print(f"verify: {verdict} (exit {result['exit_code']}"
           + (f", errors: {', '.join(result['errors'])}" if result["errors"] else "") + ")",
           file=sys.stderr)
@@ -106,7 +112,14 @@ def main(argv=None) -> int:
             fh.write(report_markdown(args.command, result))
         print(f"verify: wrote {args.report}", file=sys.stderr)
 
-    return 0 if result["ok"] else 1
+    if result["ok"]:
+        emit(success("verify", {"verdict": "PASS", "command": args.command}), args.json)
+        return EXIT_SUCCESS
+    else:
+        _r = error("verify", "command_failed", EXIT_ERROR)
+        _r["outputs"] = {"verdict": "FAIL", "command": args.command}
+        emit(_r, args.json)
+        return EXIT_ERROR
 
 
 if __name__ == "__main__":

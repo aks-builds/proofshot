@@ -1,0 +1,13 @@
+{
+  "name": "rose-pine",
+  "flags": [
+    ["--window", null],
+    ["--theme", "rose-pine"],
+    ["--background", "#191724"],
+    ["--border.radius", "8"],
+    ["--padding", "24"],
+    ["--margin", "20"],
+    ["--shadow.blur", "20"],
+    ["--shadow.y", "10"]
+  ]
+}

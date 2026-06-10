@@ -39,3 +39,75 @@ def test_check_one_detects_drift(tmp_path):
     entry = {"id": "t", "command": f'{sys.executable} -c "print(\'DIFFERENT\')"',
              "baseline": str(baseline)}
     assert check._check_one(entry, update=False) is False
+
+
+import _kernel
+
+
+def test_check_fresh_emits_json(tmp_path, capsys):
+    import json as _json
+    baseline = tmp_path / "base.txt"
+    baseline.write_text("hello\n", encoding="utf-8")
+
+    manifest = tmp_path / "proof.json"
+    manifest.write_text(_json.dumps({
+        "proofs": [{
+            "id": "test",
+            "command": "echo hello",
+            "baseline": str(baseline),
+            "image": "img.svg"
+        }]
+    }), encoding="utf-8")
+
+    rc = check.main(["--manifest", str(manifest), "--json"])
+    assert rc == 0
+    out = _json.loads(capsys.readouterr().out)
+    assert out["ok"] is True
+    assert out["step"] == "check"
+    assert out["outputs"]["drifted"] == []
+
+
+def test_check_drift_exits_6(tmp_path, capsys):
+    import json as _json
+    baseline = tmp_path / "base.txt"
+    baseline.write_text("original output\n", encoding="utf-8")
+
+    manifest = tmp_path / "proof.json"
+    manifest.write_text(_json.dumps({
+        "proofs": [{
+            "id": "test",
+            "command": "echo different output",
+            "baseline": str(baseline),
+            "image": "img.svg"
+        }]
+    }), encoding="utf-8")
+
+    rc = check.main(["--manifest", str(manifest), "--json"])
+    assert rc == _kernel.EXIT_DRIFT
+    out = _json.loads(capsys.readouterr().out)
+    assert out["ok"] is False
+    assert out["exit_code"] == _kernel.EXIT_DRIFT
+    assert "test" in out["outputs"]["drifted"]
+
+
+def test_proof_json_gif_block_is_accepted(tmp_path):
+    import json as _json
+    baseline = tmp_path / "base.txt"
+    baseline.write_text("hello\n", encoding="utf-8")
+    manifest = tmp_path / "proof.json"
+    manifest.write_text(_json.dumps({
+        "proofs": [{
+            "id": "demo",
+            "command": "echo hello",
+            "baseline": str(baseline),
+            "image": "img.svg",
+            "gif": {
+                "speed": "realistic",
+                "loop": "once",
+                "freeze_last": True,
+                "max_kb": 1800
+            }
+        }]
+    }), encoding="utf-8")
+    rc = check.main(["--manifest", str(manifest)])
+    assert rc == 0

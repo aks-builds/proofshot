@@ -2,11 +2,12 @@
 
 # 📸 cliproof
 
-**Prove your CLI actually works — and keep it true.**
+**Your README should show it works — not just say it.**
 
-Capture a **real** terminal command and its **real** output as a polished
-screenshot (or GIF), redact any secrets, and embed it into your `README.md` as
-proof-it-runs evidence — then let CI **fail if that proof ever goes stale.**
+Capture any real command and its real output — tests, builds, servers,
+scripts, pipelines — as a polished screenshot or GIF, redact any secrets,
+and embed it into your `README.md` as honest, durable evidence it works.
+Then let CI fail the moment that evidence goes stale.
 
 [![CI](https://github.com/aks-builds/cliproof/actions/workflows/ci.yml/badge.svg)](https://github.com/aks-builds/cliproof/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/aks-builds/cliproof/actions/workflows/codeql.yml/badge.svg)](https://github.com/aks-builds/cliproof/actions/workflows/codeql.yml)
@@ -59,6 +60,15 @@ durable README proof.
 
 <sub>cliproof's ✅s are backed by tests — see [Testing](#testing). (Animated GIF is exercised best-effort in CI since it needs `ttyd`; the PR-comment *post* is a `gh` side-effect, only its body is unit-tested.)</sub>
 
+## Who it's for
+
+cliproof works for anyone who runs shell commands and wants durable proof:
+- **Open-source maintainers** — show contributors and users the project ships
+- **Backend & platform engineers** — prove builds, servers, and scripts run
+- **QA & DevOps teams** — capture test runs and pipeline output as evidence
+- **AI agent builders** — wire capture → redact → embed as an MCP tool chain
+- **Anyone writing a README** — stop saying it works; show it
+
 ## Features
 
 - 📸 **Static screenshots** — macOS/iOS window or Windows-terminal look, one-flag themes (`--preset macos|github-dark|nord|iterm|win11`).
@@ -75,10 +85,40 @@ durable README proof.
 
 ## Install
 
-**Agent-agnostic (npm) — recommended for any agent:**
+**npm — works in any agent, pipeline, or IDE:**
 ```bash
 npm install -g cliproof
 cliproof install        # detects Claude Code, Cursor, Codex, OpenCode, Gemini, Windsurf
+```
+
+**MCP server (Claude Code, Cursor, Windsurf, LangChain — any MCP-compatible agent):**
+```json
+// .mcp.json
+{ "mcpServers": { "cliproof": { "command": "cliproof", "args": ["mcp"] } } }
+```
+
+**Python library:**
+```bash
+pip install cliproof
+```
+```python
+from cliproof import capture, redact, embed
+result = capture("pytest -q", preset="catppuccin")
+redact(result.image, in_place=True)
+embed("README.md", image=result.image, block_id="tests")
+```
+
+**Docker (any CI — GitHub Actions, GitLab CI, Jenkins, CircleCI):**
+```yaml
+- docker run --rm -v $PWD:/repo \
+    ghcr.io/aks-builds/cliproof:latest \
+    capture --execute "pytest -q" -o /repo/.github/media/tests.svg --json
+```
+
+**Local HTTP daemon (IDE extensions, polyglot callers):**
+```bash
+cliproof serve            # starts on localhost:7070
+curl localhost:7070/health
 ```
 
 **Claude Code plugin:**

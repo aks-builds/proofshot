@@ -39,11 +39,9 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import normalize  # noqa: E402
 
-for _stream in (sys.stdout, sys.stderr):
-    try:
-        _stream.reconfigure(encoding="utf-8", errors="replace")
-    except (AttributeError, ValueError):
-        pass
+from _kernel import EXIT_DRIFT, EXIT_SUCCESS, success, error, emit, default_timeout, setup_streams
+
+setup_streams()
 
 DEFAULT_MANIFEST = os.path.join(".cliproof", "proof.json")
 
@@ -69,12 +67,12 @@ def run_command(command: str, timeout: int = 120) -> str:
     return proc.stdout.decode("utf-8", "replace")
 
 
-def _check_one(entry, update):
+def _check_one(entry, update, timeout=120):
     cmd = entry["command"]
     baseline = entry["baseline"]
     name = entry.get("id", baseline)
     try:
-        current = run_command(cmd)
+        current = run_command(cmd, timeout=timeout)
     except Exception as exc:  # noqa: BLE001
         print(f"check: {name}: command FAILED to run: {exc}", file=sys.stderr)
         return False
@@ -108,6 +106,9 @@ def main(argv=None) -> int:
     p.add_argument("--expected", help="direct compare: expected file")
     p.add_argument("--actual", help="direct compare: actual file")
     p.add_argument("--update", action="store_true", help="(re)write baselines instead of comparing")
+    p.add_argument("--json", action="store_true", help="emit machine-readable JSON to stdout")
+    p.add_argument("--timeout", type=float, default=default_timeout("check"),
+                   help="timeout per proof command in seconds (default: 20)")
     args = p.parse_args(argv)
 
     # Direct compare mode
@@ -119,15 +120,16 @@ def main(argv=None) -> int:
         ok, diff = compare(e, a)
         if not ok:
             sys.stderr.write(diff)
-        return 0 if ok else 1
+        return EXIT_SUCCESS if ok else EXIT_DRIFT
 
     # Single-command mode
     if args.command:
         if not args.baseline:
             print("check: --command requires --baseline", file=sys.stderr)
             return 2
-        ok = _check_one({"id": "cli", "command": args.command, "baseline": args.baseline}, args.update)
-        return 0 if ok else 1
+        ok = _check_one({"id": "cli", "command": args.command, "baseline": args.baseline},
+                        args.update, timeout=args.timeout)
+        return EXIT_SUCCESS if ok else EXIT_DRIFT
 
     # Manifest mode
     if not os.path.exists(args.manifest):
@@ -139,10 +141,27 @@ def main(argv=None) -> int:
     if not proofs:
         print("check: manifest has no proofs", file=sys.stderr)
         return 2
-    results = [_check_one(e, args.update) for e in proofs]
-    failed = results.count(False)
-    print(f"check: {results.count(True)}/{len(results)} proofs OK", file=sys.stderr)
-    return 0 if failed == 0 else 1
+
+    results = []
+    drifted = []
+    for e in proofs:
+        ok = _check_one(e, args.update, timeout=args.timeout)
+        results.append(ok)
+        if not ok:
+            drifted.append(e.get("id", e.get("baseline", "?")))
+
+    failed = len(drifted)
+    print(f"check: {len(results) - failed}/{len(results)} proofs OK", file=sys.stderr)
+
+    if failed == 0:
+        result = success("check", {"total": len(results), "drifted": []})
+        emit(result, args.json)
+        return EXIT_SUCCESS
+    else:
+        result = error("check", "drift_detected", EXIT_DRIFT)
+        result["outputs"] = {"total": len(results), "drifted": drifted}
+        emit(result, args.json)
+        return EXIT_DRIFT
 
 
 if __name__ == "__main__":

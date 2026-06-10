@@ -18,14 +18,12 @@ import os
 import shutil
 import subprocess
 import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _kernel import EXIT_SUCCESS, EXIT_ERROR, success, error, emit, default_timeout, setup_streams
 
 MARKER = "<!-- cliproof:pr-comment -->"
 
-for _stream in (sys.stdout, sys.stderr):
-    try:
-        _stream.reconfigure(encoding="utf-8", errors="replace")
-    except (AttributeError, ValueError):
-        pass
+setup_streams()
 
 
 def build_comment(image_url, caption="", verify_md=""):
@@ -60,6 +58,9 @@ def main(argv=None) -> int:
     p.add_argument("--verify", help="path to a verify.py Markdown report to include")
     p.add_argument("--repo", help="owner/repo (defaults to gh's current repo)")
     p.add_argument("--dry-run", action="store_true", help="print the comment, do not post")
+    p.add_argument("--json", action="store_true", help="emit machine-readable JSON to stdout")
+    p.add_argument("--timeout", type=float, default=default_timeout("pr"),
+                   help="timeout in seconds")
     args = p.parse_args(argv)
 
     verify_md = ""
@@ -70,8 +71,17 @@ def main(argv=None) -> int:
     body = build_comment(args.image_url, args.caption, verify_md)
     if args.dry_run:
         sys.stdout.write(body)
-        return 0
-    return post_comment(args.pr, body, repo=args.repo)
+        emit(success("pr", {"pr": str(args.pr), "posted": False}), args.json)
+        return EXIT_SUCCESS
+
+    rc = post_comment(args.pr, body, repo=args.repo)
+    if rc == 0:
+        emit(success("pr", {"pr": str(args.pr), "posted": True}), args.json)
+        return EXIT_SUCCESS
+    else:
+        emit(error("pr", "post_failed", EXIT_ERROR,
+                   hint="ensure gh is on PATH and authenticated"), args.json)
+        return EXIT_ERROR
 
 
 if __name__ == "__main__":

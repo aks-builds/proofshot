@@ -24,6 +24,10 @@ import argparse
 import os
 import re
 import sys
+import os as _os_k
+import sys as _sys_k
+_sys_k.path.insert(0, _os_k.path.dirname(_os_k.path.abspath(__file__)))
+from _kernel import EXIT_SECRET, EXIT_SUCCESS, EXIT_ERROR, success, error, emit
 
 # Captured output can contain any Unicode; never crash on a cp1252 console.
 for _stream in (sys.stdout, sys.stderr):
@@ -134,6 +138,7 @@ def main(argv=None) -> int:
     p.add_argument("--in-place", action="store_true", help="rewrite the file with redacted text")
     p.add_argument("--policy", default=os.path.join(".cliproof", "redact.json"),
                    help="custom redaction policy JSON (patterns + allowlist)")
+    p.add_argument("--json", action="store_true", help="emit machine-readable JSON to stdout")
     args = p.parse_args(argv)
 
     if args.path == "-":
@@ -154,7 +159,7 @@ def main(argv=None) -> int:
         # newline="\n": write LF on every platform (no Windows CRLF translation).
         with open(args.path, "w", encoding="utf-8", newline="\n") as fh:
             fh.write(redacted)
-    else:
+    elif not args.json:
         sys.stdout.write(redacted)
 
     secrets = [f for f in findings if f[1] == SECRET]
@@ -162,14 +167,19 @@ def main(argv=None) -> int:
     for name, severity, count in findings:
         print(f"redact: {severity}: {name} x{count}", file=sys.stderr)
 
+    total_findings = sum(c for _, _, c in findings)
+    source_name = args.path
+
     if secrets:
         print("redact: SECRET-class data found - do NOT embed; re-run with sanitized input.", file=sys.stderr)
-        return 3
+        emit(error("redact", "secret_detected", EXIT_SECRET, hint="re-run with sanitized env/args"), args.json)
+        return EXIT_SECRET
     if privacy:
         print("redact: privacy items normalised; redacted output is safe to use.", file=sys.stderr)
     else:
         print("redact: clean.", file=sys.stderr)
-    return 0
+    emit(success("redact", {"findings": total_findings, "file": str(source_name)}), args.json)
+    return EXIT_SUCCESS
 
 
 if __name__ == "__main__":

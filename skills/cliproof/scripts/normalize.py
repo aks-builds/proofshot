@@ -16,6 +16,10 @@ Pure standard library. No network.
 import argparse
 import re
 import sys
+import os as _os_k
+import sys as _sys_k
+_sys_k.path.insert(0, _os_k.path.dirname(_os_k.path.abspath(__file__)))
+from _kernel import EXIT_SUCCESS, EXIT_ERROR, success, error, emit
 
 for _stream in (sys.stdout, sys.stderr):
     try:
@@ -58,6 +62,7 @@ def main(argv=None) -> int:
     p = argparse.ArgumentParser(description="Neutralise volatile tokens for reproducible captures.")
     p.add_argument("path", help="file to normalise, or '-' for stdin")
     p.add_argument("--in-place", action="store_true", help="rewrite the file")
+    p.add_argument("--json", action="store_true", help="emit machine-readable JSON to stdout")
     args = p.parse_args(argv)
 
     if args.path == "-":
@@ -71,8 +76,10 @@ def main(argv=None) -> int:
         with open(args.path, "w", encoding="utf-8") as fh:
             fh.write(out)
     else:
-        sys.stdout.write(out)
-    return 0
+        if not args.json:
+            sys.stdout.write(out)
+    emit(success("normalize", {"normalized": True}), args.json)
+    return EXIT_SUCCESS
 
 
 if __name__ == "__main__":

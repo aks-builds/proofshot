@@ -1,4 +1,6 @@
+import json
 import embed
+import _kernel
 
 
 def test_creates_block_under_heading():
@@ -61,3 +63,19 @@ def test_windows_path_normalised_to_forward_slashes():
     out = embed.upsert("# T\n", r".github\media\a.png", "a", "a", "Demo")
     assert ".github/media/a.png" in out
     assert "\\" not in out.split("](", 1)[1].split(")", 1)[0]
+
+
+def test_embed_json_mode(tmp_path, capsys):
+    readme = tmp_path / "README.md"
+    readme.write_text("# Hello\n", encoding="utf-8")
+    img = tmp_path / "shot.svg"
+    img.write_text("<svg/>", encoding="utf-8")
+    rc = embed.main([
+        str(readme), "--image", str(img), "--alt", "demo",
+        "--id", "demo", "--heading", "Demo", "--json"
+    ])
+    assert rc == 0
+    out = json.loads(capsys.readouterr().out)
+    assert out["ok"] is True
+    assert out["step"] == "embed"
+    assert "diff" in out["outputs"]

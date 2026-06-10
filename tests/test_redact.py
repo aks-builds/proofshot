@@ -1,4 +1,6 @@
+import json
 import redact
+import _kernel
 
 
 def _names(findings):
@@ -78,3 +80,24 @@ def test_exit_codes(tmp_path, capsys):
     clean = tmp_path / "c.txt"
     clean.write_text("hello world", encoding="utf-8")
     assert redact.main([str(clean), "--in-place"]) == 0
+
+
+def test_clean_input_json_mode(tmp_path, capsys):
+    f = tmp_path / "out.svg"
+    f.write_text("<svg>echo hello</svg>", encoding="utf-8")
+    rc = redact.main([str(f), "--json"])
+    assert rc == 0
+    out = json.loads(capsys.readouterr().out)
+    assert out["ok"] is True
+    assert out["step"] == "redact"
+    assert out["outputs"]["findings"] == 0
+
+
+def test_secret_input_json_mode(tmp_path, capsys):
+    f = tmp_path / "out.svg"
+    f.write_text("<svg>AKIAIOSFODNN7EXAMPLE</svg>", encoding="utf-8")
+    rc = redact.main([str(f), "--json"])
+    assert rc == _kernel.EXIT_SECRET
+    out = json.loads(capsys.readouterr().out)
+    assert out["ok"] is False
+    assert out["exit_code"] == _kernel.EXIT_SECRET

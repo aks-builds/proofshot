@@ -253,11 +253,18 @@ def main(argv=None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
 
     if not argv or argv[0] in ("-h", "--help"):
-        argparse.ArgumentParser(
+        p = argparse.ArgumentParser(
             prog="capture.py",
             description="Run freeze reliably and capture command output as SVG.",
             epilog="Pass --execute and any freeze style flags; -o must be a path.",
-        ).print_help()
+        )
+        p.add_argument("--json", action="store_true", help="emit machine-readable JSON to stdout")
+        p.add_argument("--timeout", type=float, metavar="N", help="kill renderer after N seconds (default 30)")
+        p.add_argument("--scale", type=int, choices=[1, 2, 3], default=1, help="pixel density multiplier (default 1)")
+        p.add_argument("--format", choices=["svg", "png", "webp", "og"], default="svg", help="output format (default svg)")
+        p.add_argument("--preview", action="store_true", help="print theme flags before capturing")
+        p.add_argument("--preset", metavar="NAME", help="look-and-feel preset (see: cliproof themes list)")
+        p.print_help()
         return 0 if argv else 1
 
     # Extract --json before partition sees it

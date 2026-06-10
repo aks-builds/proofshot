@@ -15,6 +15,10 @@ import re
 import sys
 
 sys.path.insert(0, __file__.rsplit("/", 1)[0] if "/" in __file__ else ".")
+import os as _os_k
+_sys_k = sys
+_sys_k.path.insert(0, _os_k.path.dirname(_os_k.path.abspath(__file__)))
+from _kernel import EXIT_SUCCESS, EXIT_ERROR, success, error, emit  # noqa: E402
 
 for _stream in (sys.stdout, sys.stderr):
     try:
@@ -119,6 +123,7 @@ def main(argv=None) -> int:
     p.add_argument("--ci-ribbon", dest="ci_ribbon", default=None, help="top ribbon bar text")
     p.add_argument("-o", "--output", required=True, help="output SVG")
     p.add_argument("--accent", default="#3fb950", help="caption accent color (hex)")
+    p.add_argument("--json", action="store_true", help="emit machine-readable JSON to stdout")
     args = p.parse_args(argv)
 
     if args.input == "-":
@@ -130,7 +135,8 @@ def main(argv=None) -> int:
     if not any([args.caption, args.badge, args.stamp, args.ci_ribbon]):
         print("annotate: no overlay flags given. Use --caption, --badge, --stamp, or --ci-ribbon.",
               file=sys.stderr)
-        return 1
+        emit(error("annotate", "no_overlay_given", EXIT_ERROR), args.json)
+        return EXIT_ERROR
 
     out = svg
     if args.caption:
@@ -145,7 +151,8 @@ def main(argv=None) -> int:
     with open(args.output, "w", encoding="utf-8", newline="\n") as fh:
         fh.write(out)
     print("annotate: wrote {}".format(args.output), file=sys.stderr)
-    return 0
+    emit(success("annotate", {"output": args.output}), args.json)
+    return EXIT_SUCCESS
 
 
 if __name__ == "__main__":

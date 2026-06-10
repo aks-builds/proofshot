@@ -34,6 +34,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `guard.py` exit code for unsafe: 5 (was 2; 2 is now reserved for unknown command)
 - `check.py` exit code for drift: 6 (was 1)
 
+## [0.1.1] - 2026-06-06
+
 ### Changed
 - **Renamed the project `proofshot` → `cliproof`.** The previous name collided
   with an established npm package and GitHub repo (`AmElmo/proofshot`) that also

@@ -1,0 +1,13 @@
+{
+  "name": "tokyo-night",
+  "flags": [
+    ["--window", null],
+    ["--theme", "tokyonight"],
+    ["--background", "#1a1b26"],
+    ["--border.radius", "8"],
+    ["--padding", "24"],
+    ["--margin", "20"],
+    ["--shadow.blur", "20"],
+    ["--shadow.y", "10"]
+  ]
+}

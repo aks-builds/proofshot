@@ -1,0 +1,13 @@
+{
+  "name": "one-dark",
+  "flags": [
+    ["--window", null],
+    ["--theme", "onedark"],
+    ["--background", "#21252b"],
+    ["--border.radius", "8"],
+    ["--padding", "24"],
+    ["--margin", "20"],
+    ["--shadow.blur", "20"],
+    ["--shadow.y", "10"]
+  ]
+}

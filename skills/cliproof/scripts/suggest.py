@@ -16,6 +16,10 @@ import json
 import os
 import re
 import sys
+import os as _os_k
+import sys as _sys_k
+_sys_k.path.insert(0, _os_k.path.dirname(_os_k.path.abspath(__file__)))
+from _kernel import EXIT_SUCCESS, EXIT_ERROR, success, error, emit, default_timeout
 
 for _stream in (sys.stdout, sys.stderr):
     try:
@@ -110,21 +114,26 @@ def scan(root: str):
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description="Suggest the best 'proof it runs' command for a repo.")
     p.add_argument("root", nargs="?", default=".", help="repo directory (default: cwd)")
-    p.add_argument("--json", action="store_true", help="machine-readable output")
+    p.add_argument("--json", action="store_true", help="emit machine-readable JSON to stdout")
     p.add_argument("--top", type=int, default=8, help="max suggestions")
+    p.add_argument("--timeout", type=float, default=default_timeout("suggest"),
+                   help="timeout in seconds")
     args = p.parse_args(argv)
 
     results = scan(args.root)[: args.top]
-    if args.json:
-        print(json.dumps(results, indent=2))
-        return 0
     if not results:
-        print("suggest: no obvious proof command found. Try '<your-tool> --help'.")
-        return 0
-    print("Suggested commands to capture (best first):")
-    for r in results:
-        print(f"  [{r['score']:>2}] {r['command']}   ({r['reason']})")
-    return 0
+        emit(error("suggest", "no_suggestions", EXIT_ERROR), args.json)
+        if not args.json:
+            print("suggest: no obvious proof command found. Try '<your-tool> --help'.")
+        return EXIT_ERROR
+
+    suggestions = [r["command"] for r in results[:5]]
+    emit(success("suggest", {"suggestions": suggestions}), args.json)
+    if not args.json:
+        print("Suggested commands to capture (best first):")
+        for r in results:
+            print(f"  [{r['score']:>2}] {r['command']}   ({r['reason']})")
+    return EXIT_SUCCESS
 
 
 if __name__ == "__main__":

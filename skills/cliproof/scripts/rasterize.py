@@ -33,6 +33,10 @@ import re
 import shutil
 import subprocess
 import sys
+import os as _os_k
+import sys as _sys_k
+_sys_k.path.insert(0, _os_k.path.dirname(_os_k.path.abspath(__file__)))
+from _kernel import EXIT_SUCCESS, EXIT_ERROR, success, error, emit, default_timeout
 
 for _stream in (sys.stdout, sys.stderr):
     try:
@@ -146,11 +150,16 @@ def main(argv=None) -> int:
     p.add_argument("--scale", type=float, default=2.0, help="device scale factor (default 2 = crisp/retina)")
     p.add_argument("--renderer", default="auto",
                    help="auto | chrome | edge | chromium | resvg | rsvg-convert | inkscape | magick")
+    p.add_argument("--json", action="store_true", help="emit machine-readable JSON to stdout")
+    p.add_argument("--timeout", type=float, default=default_timeout("rasterize"),
+                   help="timeout in seconds")
     args = p.parse_args(argv)
 
     if not os.path.exists(args.svg):
         print("rasterize: input not found: {}".format(args.svg), file=sys.stderr)
-        return 1
+        emit(error("rasterize", "no_renderer", EXIT_ERROR,
+                   hint="install resvg, inkscape, or imagemagick"), args.json)
+        return EXIT_ERROR
     # Absolute path: headless browsers resolve --screenshot against their own cwd.
     out_path = os.path.abspath(args.output or (os.path.splitext(args.svg)[0] + ".png"))
 
@@ -168,7 +177,9 @@ def main(argv=None) -> int:
             print("rasterize: renderer '{}' not found. {}".format(preferred, hint), file=sys.stderr)
         else:
             print("rasterize: no SVG renderer found. {}".format(hint), file=sys.stderr)
-        return 1
+        emit(error("rasterize", "no_renderer", EXIT_ERROR,
+                   hint="install resvg, inkscape, or imagemagick"), args.json)
+        return EXIT_ERROR
 
     kind, path = found
     parent = os.path.dirname(os.path.abspath(out_path))
@@ -180,19 +191,24 @@ def main(argv=None) -> int:
                               stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     except OSError as exc:
         print("rasterize: failed to launch {}: {}".format(kind, exc), file=sys.stderr)
-        return 1
+        emit(error("rasterize", "no_renderer", EXIT_ERROR,
+                   hint="install resvg, inkscape, or imagemagick"), args.json)
+        return EXIT_ERROR
 
     # Browsers (and some tools) chatter on stderr and still succeed; trust the file.
     if not (os.path.exists(out_path) and os.path.getsize(out_path) > 0):
         sys.stderr.buffer.write(proc.stderr or b"")
         print("\nrasterize: {} produced no output (exit {}).".format(kind, proc.returncode),
               file=sys.stderr)
-        return 1
+        emit(error("rasterize", "no_renderer", EXIT_ERROR,
+                   hint="install resvg, inkscape, or imagemagick"), args.json)
+        return EXIT_ERROR
 
     print(out_path)
     print("rasterize: wrote {} via {} (scale {}).".format(out_path, kind, args.scale),
           file=sys.stderr)
-    return 0
+    emit(success("rasterize", {"output": out_path}), args.json)
+    return EXIT_SUCCESS
 
 
 if __name__ == "__main__":

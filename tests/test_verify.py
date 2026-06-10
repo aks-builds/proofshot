@@ -1,6 +1,24 @@
+import json
 import sys
 
+import _kernel
 import verify
+
+
+def test_verify_passing_command_json(capsys):
+    rc = verify.main(["--command", f"{sys.executable} -c \"import sys; sys.exit(0)\"", "--json"])
+    assert rc == 0
+    out = json.loads(capsys.readouterr().out)
+    assert out["ok"] is True
+    assert out["step"] == "verify"
+    assert out["outputs"]["verdict"] == "PASS"
+
+
+def test_verify_failing_command_json(capsys):
+    rc = verify.main(["--command", f"{sys.executable} -c \"import sys; sys.exit(1)\"", "--json"])
+    assert rc != 0
+    out = json.loads(capsys.readouterr().out)
+    assert out["outputs"]["verdict"] == "FAIL"
 
 
 def test_detect_errors_python_traceback():

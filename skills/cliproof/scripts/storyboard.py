@@ -12,6 +12,10 @@ Pure standard library (xml via regex on freeze's well-formed SVG). No network.
 import argparse
 import re
 import sys
+import os as _os_k
+import sys as _sys_k
+_sys_k.path.insert(0, _os_k.path.dirname(_os_k.path.abspath(__file__)))
+from _kernel import EXIT_SUCCESS, EXIT_ERROR, success, error, emit, default_timeout
 
 for _stream in (sys.stdout, sys.stderr):
     try:
@@ -66,17 +70,26 @@ def main(argv=None) -> int:
     p.add_argument("inputs", nargs="+", help="input SVG files, top to bottom")
     p.add_argument("-o", "--output", required=True, help="output SVG path")
     p.add_argument("--gap", type=int, default=16, help="vertical gap between frames (px)")
+    p.add_argument("--json", action="store_true", help="emit machine-readable JSON to stdout")
+    p.add_argument("--timeout", type=float, default=default_timeout("storyboard"),
+                   help="timeout in seconds")
     args = p.parse_args(argv)
 
     texts = []
-    for path in args.inputs:
-        with open(path, "r", encoding="utf-8-sig") as fh:
-            texts.append(fh.read())
-    out = stitch(texts, gap=args.gap)
-    with open(args.output, "w", encoding="utf-8", newline="\n") as fh:
-        fh.write(out)
+    try:
+        for path in args.inputs:
+            with open(path, "r", encoding="utf-8-sig") as fh:
+                texts.append(fh.read())
+        out = stitch(texts, gap=args.gap)
+        with open(args.output, "w", encoding="utf-8", newline="\n") as fh:
+            fh.write(out)
+    except Exception as exc:  # noqa: BLE001
+        print("storyboard: error: {}".format(exc), file=sys.stderr)
+        emit(error("storyboard", "stitch_failed", EXIT_ERROR), args.json)
+        return EXIT_ERROR
     print("storyboard: wrote {} ({} frames)".format(args.output, len(texts)), file=sys.stderr)
-    return 0
+    emit(success("storyboard", {"output": str(args.output)}), args.json)
+    return EXIT_SUCCESS
 
 
 if __name__ == "__main__":

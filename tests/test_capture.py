@@ -129,3 +129,84 @@ def test_build_command_applies_preset_and_user_overrides():
 def test_main_rejects_unknown_preset(capsys):
     assert capture.main(["--preset", "nope", "--execute", "ls", "-o", "x.svg"]) == 1
 
+
+import json
+import _kernel
+
+
+def test_json_flag_emits_success_result(tmp_path, monkeypatch, capsys):
+    out = tmp_path / "shot.svg"
+
+    def fake_run(cmd, **kw):
+        target = cmd[cmd.index("--output") + 1]
+        with open(target, "w") as f:
+            f.write("<svg/>")
+        class R:
+            returncode = 0; stdout = b""; stderr = b""
+        return R()
+
+    monkeypatch.setattr(capture.subprocess, "run", fake_run)
+    monkeypatch.setattr(capture.shutil, "which", lambda b: "/usr/bin/freeze" if b == "freeze" else None)
+
+    rc = capture.main(["--execute", "echo hi", "-o", str(out), "--json"])
+    assert rc == 0
+    result = json.loads(capsys.readouterr().out)
+    assert result["ok"] is True
+    assert result["step"] == "capture"
+    assert result["renderer"] == "freeze"
+    assert result["tier"] == 1
+    assert "image" in result["outputs"]
+
+
+def test_timeout_flag_triggers_exit_4(tmp_path, monkeypatch, capsys):
+    import time as _time
+    out = tmp_path / "shot.svg"
+
+    def slow_run(cmd, **kw):
+        timeout = kw.get("timeout")
+        if timeout and timeout < 1:
+            raise capture.subprocess.TimeoutExpired(cmd, timeout)
+        _time.sleep(10)
+
+    monkeypatch.setattr(capture.subprocess, "run", slow_run)
+    monkeypatch.setattr(capture.shutil, "which", lambda b: "/usr/bin/freeze" if b == "freeze" else None)
+
+    rc = capture.main(["--execute", "echo hi", "-o", str(out), "--timeout", "0.1", "--json"])
+    assert rc == _kernel.EXIT_TIMEOUT
+    result = json.loads(capsys.readouterr().out)
+    assert result["ok"] is False
+    assert result["reason"] == "timeout"
+    assert result["exit_code"] == _kernel.EXIT_TIMEOUT
+
+
+def test_fallback_to_tier4_text_svg_when_no_renderers(tmp_path, monkeypatch, capsys):
+    out = tmp_path / "shot.svg"
+    monkeypatch.setattr(capture.shutil, "which", lambda _: None)
+
+    rc = capture.main(["--execute", "echo hello", "-o", str(out), "--json"])
+    assert rc == 0
+    result = json.loads(capsys.readouterr().out)
+    assert result["tier"] == 4
+    assert result["renderer"] == "text-svg"
+    assert out.exists() and out.stat().st_size > 0
+
+
+def test_scale_flag_stored_in_result(tmp_path, monkeypatch, capsys):
+    out = tmp_path / "shot.svg"
+
+    def fake_run(cmd, **kw):
+        target = cmd[cmd.index("--output") + 1]
+        with open(target, "w") as f:
+            f.write("<svg/>")
+        class R:
+            returncode = 0; stdout = b""; stderr = b""
+        return R()
+
+    monkeypatch.setattr(capture.subprocess, "run", fake_run)
+    monkeypatch.setattr(capture.shutil, "which", lambda b: "/usr/bin/freeze" if b == "freeze" else None)
+
+    rc = capture.main(["--execute", "echo hi", "-o", str(out), "--scale", "2", "--json"])
+    assert rc == 0
+    result = json.loads(capsys.readouterr().out)
+    assert result["outputs"].get("scale") == 2
+

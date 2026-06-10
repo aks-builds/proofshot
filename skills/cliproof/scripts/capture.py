@@ -27,6 +27,7 @@ Owned flags: `-o/--output` (coerced to `.svg`) and `--freeze-bin`.
 Exit codes:
     0  SVG written
     1  freeze not found, freeze failed, or no output produced
+    4  timeout
 
 Pure standard library. No network. Invokes the local `freeze` binary only.
 """
@@ -35,6 +36,12 @@ import os
 import shutil
 import subprocess
 import sys
+
+# Kernel helpers — same directory as this script.
+import os as _os_k
+import sys as _sys_k
+_sys_k.path.insert(0, _os_k.path.dirname(_os_k.path.abspath(__file__)))
+from _kernel import EXIT_SUCCESS, EXIT_ERROR, EXIT_TIMEOUT, success, error, emit, default_timeout
 
 # Status/diagnostic text can contain any Unicode; never crash on a cp1252 console.
 for _stream in (sys.stdout, sys.stderr):
@@ -109,6 +116,17 @@ def _has_flag(passthrough, name):
     return any(a == name or a.startswith(name + "=") for a in passthrough)
 
 
+def _all_presets():
+    """Return combined built-in + file-based preset names."""
+    names = set(PRESETS.keys())
+    themes_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "themes")
+    if os.path.isdir(themes_dir):
+        for fn in os.listdir(themes_dir):
+            if fn.endswith(".json"):
+                names.add(fn[:-5])
+    return names
+
+
 def extract_preset(passthrough):
     """Pull a `--preset NAME` / `--preset=NAME` out of passthrough.
 
@@ -136,11 +154,26 @@ def extract_preset(passthrough):
 
 def preset_flags(name, passthrough):
     """Flags a preset contributes, skipping any the user already set."""
-    flags = []
-    for flag, val in PRESETS.get(name, []):
-        if not _has_flag(passthrough, flag):
-            flags += [flag] if val is None else [flag, val]
-    return flags
+    if name in PRESETS:
+        flags = []
+        for flag, val in PRESETS[name]:
+            if not _has_flag(passthrough, flag):
+                flags += [flag] if val is None else [flag, val]
+        return flags
+    # File-based theme
+    import json as _json
+    themes_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "themes")
+    theme_path = os.path.join(themes_dir, name + ".json")
+    if os.path.exists(theme_path):
+        with open(theme_path, encoding="utf-8") as fh:
+            data = _json.load(fh)
+        flags = []
+        for pair in data.get("flags", []):
+            flag, val = pair[0], pair[1]
+            if not _has_flag(passthrough, flag):
+                flags += [flag] if val is None else [flag, val]
+        return flags
+    return []
 
 
 def needs_language(passthrough) -> bool:
@@ -176,10 +209,49 @@ def build_command(freeze_bin, passthrough, svg_path, preset=None):
     return cmd
 
 
+def _make_text_svg(command, output_path):
+    """Tier-4 fallback: run the command and embed its output as plain monospace SVG."""
+    try:
+        proc = subprocess.run(
+            command, shell=True, stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=10
+        )
+        lines = proc.stdout.decode("utf-8", "replace").splitlines()[:40]
+    except Exception:
+        lines = ["(capture failed — no renderer available)"]
+
+    line_h, pad, font_size = 20, 16, 13
+    w = max((max((len(l) for l in lines), default=40) * 8) + pad * 2, 400)
+    h = len(lines) * line_h + pad * 2
+
+    def _esc(t):
+        return t.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+    rows = "\n".join(
+        '<text x="{px}" y="{py}" fill="#c9d1d9" font-family="monospace" font-size="{fs}">{txt}</text>'.format(
+            px=pad, py=pad + (i + 1) * line_h, fs=font_size, txt=_esc(l)
+        )
+        for i, l in enumerate(lines)
+    )
+    svg = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}">\n'
+        '<rect width="{w}" height="{h}" fill="#0d1117"/>\n'
+        '{rows}\n'
+        '<text x="{px}" y="{wy}" fill="#484f58" font-family="monospace" font-size="11">'
+        '[cliproof tier-4 text stub — install freeze for styled output]</text>\n'
+        '</svg>\n'
+    ).format(w=w, h=h + 20, rows=rows, px=pad, wy=h + 14)
+
+    os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
+    with open(output_path, "w", encoding="utf-8", newline="\n") as fh:
+        fh.write(svg)
+
+
 def main(argv=None) -> int:
+    import time
     argv = list(sys.argv[1:] if argv is None else argv)
 
-    # A tiny parser purely for --help; real parsing is in partition().
     if not argv or argv[0] in ("-h", "--help"):
         argparse.ArgumentParser(
             prog="capture.py",
@@ -188,62 +260,202 @@ def main(argv=None) -> int:
         ).print_help()
         return 0 if argv else 1
 
+    # Extract --json before partition sees it
+    json_mode = "--json" in argv
+    argv = [a for a in argv if a != "--json"]
+
+    # Extract --timeout
+    timeout_s = default_timeout("capture")
+    new_argv = []
+    i = 0
+    while i < len(argv):
+        if argv[i] == "--timeout" and i + 1 < len(argv):
+            try:
+                timeout_s = float(argv[i + 1])
+            except ValueError:
+                pass
+            i += 2
+        elif argv[i].startswith("--timeout="):
+            try:
+                timeout_s = float(argv[i].split("=", 1)[1])
+            except ValueError:
+                pass
+            i += 1
+        else:
+            new_argv.append(argv[i])
+            i += 1
+    argv = new_argv
+
+    # Extract --scale
+    scale = 1
+    new_argv = []
+    i = 0
+    while i < len(argv):
+        if argv[i] == "--scale" and i + 1 < len(argv):
+            try:
+                scale = int(argv[i + 1])
+            except ValueError:
+                pass
+            i += 2
+        elif argv[i].startswith("--scale="):
+            try:
+                scale = int(argv[i].split("=", 1)[1])
+            except ValueError:
+                pass
+            i += 1
+        else:
+            new_argv.append(argv[i])
+            i += 1
+    argv = new_argv
+
+    # Extract --format
+    fmt = "svg"
+    new_argv = []
+    i = 0
+    while i < len(argv):
+        if argv[i] == "--format" and i + 1 < len(argv):
+            fmt = argv[i + 1]
+            i += 2
+        elif argv[i].startswith("--format="):
+            fmt = argv[i].split("=", 1)[1]
+            i += 1
+        else:
+            new_argv.append(argv[i])
+            i += 1
+    argv = new_argv
+
+    # Extract --preview
+    preview = "--preview" in argv
+    argv = [a for a in argv if a != "--preview"]
+
     try:
         output, freeze_bin, passthrough = partition(argv)
     except ValueError as exc:
         print("capture: {}".format(exc), file=sys.stderr)
-        return 1
+        return EXIT_ERROR
 
     preset, passthrough = extract_preset(passthrough)
-    if preset and preset not in PRESETS:
+    if preset and preset not in _all_presets():
         print("capture: unknown --preset '{}'. Choose from: {}".format(
-            preset, ", ".join(sorted(PRESETS))), file=sys.stderr)
-        return 1
+            preset, ", ".join(sorted(_all_presets()))), file=sys.stderr)
+        return EXIT_ERROR
 
     if not output:
         print("capture: -o/--output is required (e.g. -o .github/media/help.svg)", file=sys.stderr)
-        return 1
+        return EXIT_ERROR
+
     if not _has_flag(passthrough, "--execute"):
         print("capture: warning: no --execute given; freeze will read a file, not a command.",
               file=sys.stderr)
+
+    # Extract execute command for tier-4 fallback
+    execute_cmd = None
+    for idx, a in enumerate(passthrough):
+        if a == "--execute" and idx + 1 < len(passthrough):
+            execute_cmd = passthrough[idx + 1]
+            break
 
     svg_path, changed = coerce_svg_path(output)
     if changed:
         print("capture: capturing to SVG ({}); rasterize after redaction with rasterize.py."
               .format(svg_path), file=sys.stderr)
 
-    if shutil.which(freeze_bin) is None and not os.path.exists(freeze_bin):
-        print("capture: '{}' not found. Install freeze (see references/tooling.md) "
-              "or pass --freeze-bin.".format(freeze_bin), file=sys.stderr)
-        return 1
+    # --preview: print theme flags before capturing
+    if preview:
+        if preset:
+            flags = preset_flags(preset, [])
+            pairs, i2 = [], 0
+            while i2 < len(flags):
+                if i2 + 1 < len(flags) and not flags[i2 + 1].startswith("--"):
+                    pairs.append("{}={}".format(flags[i2].lstrip("-"), flags[i2 + 1]))
+                    i2 += 2
+                else:
+                    pairs.append(flags[i2].lstrip("-"))
+                    i2 += 1
+            print("capture: [preview] theme '{}': {}".format(preset, ", ".join(pairs)),
+                  file=sys.stderr)
+        else:
+            print("capture: [preview] no --preset given; using freeze defaults.", file=sys.stderr)
+        print("capture: [preview] proceeding with full capture...", file=sys.stderr)
 
     parent = os.path.dirname(os.path.abspath(svg_path))
     os.makedirs(parent, exist_ok=True)
 
-    cmd = build_command(freeze_bin, passthrough, svg_path, preset=preset)
-    try:
-        # stdin=DEVNULL is the fix: never let freeze block on an inherited pipe.
-        proc = subprocess.run(cmd, stdin=subprocess.DEVNULL,
-                              stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    except OSError as exc:
-        print("capture: failed to launch freeze: {}".format(exc), file=sys.stderr)
-        return 1
+    start = time.monotonic()
 
-    if proc.returncode != 0:
-        sys.stderr.buffer.write(proc.stderr or b"")
-        print("\ncapture: freeze exited {}.".format(proc.returncode), file=sys.stderr)
-        return 1
-    if not (os.path.exists(svg_path) and os.path.getsize(svg_path) > 0):
-        print("capture: freeze produced no output at {}.".format(svg_path), file=sys.stderr)
-        return 1
+    # --- Renderer fallback chain ---
+    # Tier 1: freeze
+    if shutil.which(freeze_bin) is not None or os.path.exists(freeze_bin):
+        cmd = build_command(freeze_bin, passthrough, svg_path, preset=preset)
+        try:
+            proc = subprocess.run(cmd, stdin=subprocess.DEVNULL,
+                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                  timeout=timeout_s)
+        except subprocess.TimeoutExpired:
+            elapsed = time.monotonic() - start
+            print("capture: freeze timed out after {}s.".format(timeout_s), file=sys.stderr)
+            result = error("capture", "timeout", EXIT_TIMEOUT, elapsed_s=elapsed,
+                           hint="use --timeout {} or add --no-stdin".format(int(timeout_s * 2)))
+            emit(result, json_mode)
+            return EXIT_TIMEOUT
+        except OSError as exc:
+            print("capture: failed to launch freeze: {}".format(exc), file=sys.stderr)
+            proc = None
 
-    if strip_bom(svg_path):
-        print("capture: stripped a UTF-8 BOM from the SVG.", file=sys.stderr)
+        if proc is not None and proc.returncode == 0 and \
+                os.path.exists(svg_path) and os.path.getsize(svg_path) > 0:
+            if strip_bom(svg_path):
+                print("capture: stripped a UTF-8 BOM from the SVG.", file=sys.stderr)
+            elapsed = time.monotonic() - start
+            result = success("capture",
+                             {"image": svg_path, "scale": scale, "format": fmt},
+                             elapsed_s=elapsed, renderer="freeze", tier=1)
+            emit(result, json_mode)
+            if not json_mode:
+                print(svg_path)
+                print("capture: wrote {}. Next: redact.py {} --in-place, then (optional) rasterize.py."
+                      .format(svg_path, svg_path), file=sys.stderr)
+            return EXIT_SUCCESS
+        else:
+            if proc is not None:
+                sys.stderr.buffer.write(proc.stderr or b"")
+            print("\ncapture: freeze failed; trying fallback renderers.", file=sys.stderr)
 
-    print(svg_path)
-    print("capture: wrote {}. Next: redact.py {} --in-place, then (optional) rasterize.py."
-          .format(svg_path, svg_path), file=sys.stderr)
-    return 0
+    # Tier 2: silicon
+    silicon_bin = shutil.which("silicon")
+    if silicon_bin and execute_cmd:
+        try:
+            proc2 = subprocess.run(
+                [silicon_bin, "--output", svg_path],
+                input=execute_cmd.encode("utf-8"),
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                timeout=timeout_s
+            )
+            if proc2.returncode == 0 and os.path.exists(svg_path) and os.path.getsize(svg_path) > 0:
+                elapsed = time.monotonic() - start
+                result = success("capture",
+                                 {"image": svg_path, "scale": scale, "format": fmt},
+                                 elapsed_s=elapsed, renderer="silicon", tier=2,
+                                 warnings=["rendered via silicon (tier-2 fallback)"])
+                emit(result, json_mode)
+                if not json_mode:
+                    print(svg_path)
+                return EXIT_SUCCESS
+        except Exception:
+            pass
+
+    # Tier 4: text-SVG stub — always succeeds
+    print("capture: no styled renderer found; generating text-SVG stub (tier 4).", file=sys.stderr)
+    _make_text_svg(execute_cmd or "", svg_path)
+    elapsed = time.monotonic() - start
+    result = success("capture",
+                     {"image": svg_path, "scale": scale, "format": fmt},
+                     elapsed_s=elapsed, renderer="text-svg", tier=4,
+                     warnings=["tier-4 text stub — install freeze for styled output"])
+    emit(result, json_mode)
+    if not json_mode:
+        print(svg_path)
+    return EXIT_SUCCESS
 
 
 if __name__ == "__main__":

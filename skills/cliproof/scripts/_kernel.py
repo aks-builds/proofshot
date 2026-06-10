@@ -92,3 +92,22 @@ def run_timed(fn, timeout_s):
     if exc_box[0] is not None:
         raise exc_box[0]
     return box[0], elapsed, False
+
+
+def setup_streams():
+    """Configure stdout/stderr to UTF-8 with error replacement on Windows cp1252 terminals.
+
+    Returns True if both streams were reconfigured, False if either stream does not
+    support reconfigure (e.g. non-interactive pipes). Either way output will not crash
+    on Unicode/emoji characters — 'errors=replace' substitutes un-encodable code points.
+
+    Call once at the top of each cliproof script before any output.
+    """
+    import sys as _sys_ss
+    configured = True
+    for _stream in (_sys_ss.stdout, _sys_ss.stderr):
+        try:
+            _stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            configured = False  # stream doesn't support reconfigure; default encoding in effect
+    return configured

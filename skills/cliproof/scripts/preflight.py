@@ -8,7 +8,11 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from _kernel import setup_streams  # noqa: E402
 import health  # noqa: E402
+
+setup_streams()
 
 # Keep detect() and main() importable for backward compat
 detect = health.detect

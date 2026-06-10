@@ -79,3 +79,8 @@ def test_run_timed_detects_timeout():
     val, elapsed, timed_out = _kernel.run_timed(lambda: time.sleep(10), timeout_s=0.1)
     assert timed_out is True
     assert elapsed >= 0.1
+
+
+def test_setup_streams_returns_bool():
+    result = _kernel.setup_streams()
+    assert isinstance(result, bool)

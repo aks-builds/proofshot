@@ -24,17 +24,11 @@ import argparse
 import os
 import re
 import sys
-import os as _os_k
-import sys as _sys_k
-_sys_k.path.insert(0, _os_k.path.dirname(_os_k.path.abspath(__file__)))
-from _kernel import EXIT_SECRET, EXIT_SUCCESS, EXIT_ERROR, success, error, emit
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _kernel import EXIT_SECRET, EXIT_SUCCESS, EXIT_ERROR, success, error, emit, setup_streams
 
 # Captured output can contain any Unicode; never crash on a cp1252 console.
-for _stream in (sys.stdout, sys.stderr):
-    try:
-        _stream.reconfigure(encoding="utf-8", errors="replace")
-    except (AttributeError, ValueError):
-        pass
+setup_streams()
 
 SECRET = "secret"
 PRIVACY = "privacy"
@@ -155,13 +149,6 @@ def main(argv=None) -> int:
             args.policy, len(extra_rules), len(allow)), file=sys.stderr)
     redacted, findings = redact(text, extra_rules=extra_rules, allow=allow)
 
-    if args.in_place and args.path != "-":
-        # newline="\n": write LF on every platform (no Windows CRLF translation).
-        with open(args.path, "w", encoding="utf-8", newline="\n") as fh:
-            fh.write(redacted)
-    elif not args.json:
-        sys.stdout.write(redacted)
-
     secrets = [f for f in findings if f[1] == SECRET]
     privacy = [f for f in findings if f[1] == PRIVACY]
     for name, severity, count in findings:
@@ -170,10 +157,21 @@ def main(argv=None) -> int:
     total_findings = sum(c for _, _, c in findings)
     source_name = args.path
 
+    # Gate: block writes if SECRET-class data is present
     if secrets:
-        print("redact: SECRET-class data found - do NOT embed; re-run with sanitized input.", file=sys.stderr)
-        emit(error("redact", "secret_detected", EXIT_SECRET, hint="re-run with sanitized env/args"), args.json)
+        print("redact: SECRET-class data found - do NOT embed; re-run with sanitized input.",
+              file=sys.stderr)
+        emit(error("redact", "secret_detected", EXIT_SECRET,
+                   hint="re-run with sanitized env/args"), args.json)
         return EXIT_SECRET
+
+    # Only reach here when output is clean — safe to write
+    if args.in_place and args.path != "-":
+        with open(args.path, "w", encoding="utf-8", newline="\n") as fh:
+            fh.write(redacted)
+    elif not args.json:
+        sys.stdout.write(redacted)
+
     if privacy:
         print("redact: privacy items normalised; redacted output is safe to use.", file=sys.stderr)
     else:

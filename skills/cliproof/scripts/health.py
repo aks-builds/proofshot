@@ -23,12 +23,12 @@ import re
 import shutil
 import subprocess
 import sys
+import os as _os_kk
+import sys as _sys_kk
+_sys_kk.path.insert(0, _os_kk.path.dirname(_os_kk.path.abspath(__file__)))
+from _kernel import setup_streams  # noqa: E402
 
-for _s in (sys.stdout, sys.stderr):
-    try:
-        _s.reconfigure(encoding="utf-8", errors="replace")
-    except (AttributeError, ValueError):
-        pass
+setup_streams()
 
 
 def _tool_version(name):

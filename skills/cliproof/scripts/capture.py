@@ -41,14 +41,10 @@ import sys
 import os as _os_k
 import sys as _sys_k
 _sys_k.path.insert(0, _os_k.path.dirname(_os_k.path.abspath(__file__)))
-from _kernel import EXIT_SUCCESS, EXIT_ERROR, EXIT_TIMEOUT, success, error, emit, default_timeout
+from _kernel import EXIT_SUCCESS, EXIT_ERROR, EXIT_TIMEOUT, success, error, emit, default_timeout, setup_streams
 
 # Status/diagnostic text can contain any Unicode; never crash on a cp1252 console.
-for _stream in (sys.stdout, sys.stderr):
-    try:
-        _stream.reconfigure(encoding="utf-8", errors="replace")
-    except (AttributeError, ValueError):
-        pass
+setup_streams()
 
 
 def coerce_svg_path(path: str):

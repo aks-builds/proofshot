@@ -32,14 +32,10 @@ import sys
 import os as _os_k
 import sys as _sys_k
 _sys_k.path.insert(0, _os_k.path.dirname(_os_k.path.abspath(__file__)))
-from _kernel import EXIT_SUCCESS, EXIT_ERROR, success, error, emit
+from _kernel import EXIT_SUCCESS, EXIT_ERROR, success, error, emit, setup_streams
 
 # README/diff text can contain any Unicode; never crash on a cp1252 console.
-for _stream in (sys.stdout, sys.stderr):
-    try:
-        _stream.reconfigure(encoding="utf-8", errors="replace")
-    except (AttributeError, ValueError):
-        pass
+setup_streams()
 
 
 def _block(image: str, alt: str, block_id: str) -> str:

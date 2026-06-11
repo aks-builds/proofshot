@@ -210,3 +210,49 @@ def test_scale_flag_stored_in_result(tmp_path, monkeypatch, capsys):
     result = json.loads(capsys.readouterr().out)
     assert result["outputs"].get("scale") == 2
 
+
+def test_windows_go_crash_prints_clean_message_not_stack_trace(tmp_path, monkeypatch, capsys):
+    """freeze ≤0.2.x crashes with a Go runtime stack overflow on Windows.
+    capture.py must detect the pattern and emit a clean diagnostic instead of
+    dumping the full crash trace, then fall through to tier-4 gracefully."""
+    out = tmp_path / "shot.svg"
+
+    # Simulate the Windows Go runtime stack-overflow crash
+    GO_CRASH_STDERR = (
+        b"runtime: newstack sp=0x2bd69eb59e18 stack=[0x2bd69f386000, 0x2bd69f396000]\n"
+        b"\tmorebuf={pc:0x7ff6fcbab335 sp:0x2bd69eb59e28 lr:0x0}\n"
+        b"\tsched={pc:0x7ff6fcb8648b sp:0x2bd69eb59e20 lr:0x0 ctxt:0x0}\n"
+        b"runtime: split stack overflow\n"
+        b"fatal error: runtime: split stack overflow\n"
+        b"\nruntime stack:\nruntime.throw(...)\n"
+    )
+
+    def freeze_crashes(cmd, **kw):
+        class R:
+            returncode = 2
+            stdout = b""
+            stderr = GO_CRASH_STDERR
+        return R()
+
+    monkeypatch.setattr(capture.subprocess, "run", freeze_crashes)
+    monkeypatch.setattr(capture.shutil, "which",
+                        lambda b: "/usr/bin/freeze" if b == "freeze" else None)
+
+    rc = capture.main(["--execute", "echo hi", "-o", str(out), "--json"])
+
+    # Capture stdout + stderr in one call (readouterr clears the buffer)
+    captured = capsys.readouterr()
+
+    # Must still succeed via tier-4 fallback
+    assert rc == 0
+    result = json.loads(captured.out)
+    assert result["tier"] == 4
+    assert result["renderer"] == "text-svg"
+
+    # The Go crash trace must NOT appear in stderr
+    assert "runtime: newstack" not in captured.err
+    assert "split stack overflow" not in captured.err
+
+    # A clean, actionable message must appear instead
+    assert "Go runtime" in captured.err or "freeze crashed" in captured.err
+

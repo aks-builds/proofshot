@@ -419,8 +419,32 @@ def main(argv=None) -> int:
             return EXIT_SUCCESS
         else:
             if proc is not None:
-                sys.stderr.buffer.write(proc.stderr or b"")
-            print("\ncapture: freeze failed; trying fallback renderers.", file=sys.stderr)
+                stderr_text = (proc.stderr or b"").decode("utf-8", errors="replace")
+                # Detect Windows Go runtime crash (known freeze ≤0.2.x bug: split stack
+                # overflow when the output SVG path contains non-ASCII or when freeze's
+                # GC scans a very large goroutine stack on Windows).
+                _GO_CRASH_MARKERS = (
+                    "runtime: split stack overflow",
+                    "fatal error: runtime",
+                    "panic during panic",
+                    "runtime: newstack",
+                    "runtime stack:",
+                )
+                is_go_crash = any(m in stderr_text for m in _GO_CRASH_MARKERS)
+                if is_go_crash:
+                    print(
+                        "capture: freeze crashed with a Go runtime error "
+                        "(known Windows issue in freeze ≤0.2.x).",
+                        file=sys.stderr,
+                    )
+                    print(
+                        "capture: fix — upgrade freeze: "
+                        "go install github.com/charmbracelet/freeze@latest",
+                        file=sys.stderr,
+                    )
+                else:
+                    sys.stderr.buffer.write(proc.stderr or b"")
+            print("capture: freeze failed; trying fallback renderers.", file=sys.stderr)
 
     # Tier 2: silicon
     silicon_bin = shutil.which("silicon")
